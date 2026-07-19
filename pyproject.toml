@@ -53,6 +53,7 @@ mobile = [
 
 [project.scripts]
 sightly = "sightly_assist.cli:app"
+sightly-mobile = "sightly_assist.mobile_cli:app"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/sightly_assist"]
