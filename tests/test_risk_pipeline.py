@@ -6,6 +6,7 @@ from collections.abc import Sequence
 from pathlib import Path
 
 import numpy as np
+import pytest
 
 from sightly_assist.depth_association import CameraIntrinsics
 from sightly_assist.iou_tracker import IoUTracker
@@ -106,7 +107,7 @@ def test_risk_configuration_requires_motion_estimator(tmp_path: Path) -> None:
     def image_loader(frame: FramePacket, root: Path) -> np.ndarray:
         return np.zeros((frame.height_px, frame.width_px, 3), dtype=np.uint8)
 
-    try:
+    with pytest.raises(ValueError, match="requires motion_estimator"):
         list(
             process_replay(
                 _manifest(),
@@ -117,7 +118,3 @@ def test_risk_configuration_requires_motion_estimator(tmp_path: Path) -> None:
                 risk_config=PerceptionRiskConfig(),
             )
         )
-    except ValueError as exc:
-        assert "requires motion_estimator" in str(exc)
-    else:
-        raise AssertionError("risk_config without motion_estimator should fail")
