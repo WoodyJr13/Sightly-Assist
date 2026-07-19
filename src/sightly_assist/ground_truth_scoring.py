@@ -165,9 +165,7 @@ def score_ground_truth(
         for annotation_frame, result in zip(annotations.frames, results, strict=True)
     )
 
-    gt_object_count = sum(
-        not item.ignore for frame in annotations.frames for item in frame.objects
-    )
+    gt_object_count = sum(not item.ignore for frame in annotations.frames for item in frame.objects)
     predicted_track_count = sum(
         len(result.tracks) - len(match.ignored_track_ids)
         for result, match in zip(results, matches, strict=True)
@@ -601,16 +599,10 @@ def _score_warnings(
     false_warning_count = 0
     for result, match in zip(results, matches, strict=True):
         decision = result.warning_decision
-        if (
-            decision is None
-            or not decision.should_emit
-            or _warning_severity(decision.action) <= 0
-        ):
+        if decision is None or not decision.should_emit or _warning_severity(decision.action) <= 0:
             continue
         object_id = (
-            match.track_to_gt.get(decision.track_id)
-            if decision.track_id is not None
-            else None
+            match.track_to_gt.get(decision.track_id) if decision.track_id is not None else None
         )
         active = any(
             event.object_id == object_id
@@ -658,8 +650,7 @@ def _vector_error(
 ) -> float:
     return float(
         np.linalg.norm(
-            np.asarray(predicted, dtype=np.float64)
-            - np.asarray(ground_truth, dtype=np.float64)
+            np.asarray(predicted, dtype=np.float64) - np.asarray(ground_truth, dtype=np.float64)
         )
     )
 
@@ -675,9 +666,7 @@ def _f1(precision: float, recall: float) -> float:
 def _duration_s(results: tuple[ScoredReplayFrame, ...]) -> float:
     if len(results) < 2:
         return 0.0
-    return (
-        results[-1].frame.timestamp_ns - results[0].frame.timestamp_ns
-    ) / 1_000_000_000
+    return (results[-1].frame.timestamp_ns - results[0].frame.timestamp_ns) / 1_000_000_000
 
 
 def _sha256(path: Path) -> str:

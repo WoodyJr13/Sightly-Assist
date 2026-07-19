@@ -25,7 +25,6 @@ from sightly_assist.perception import BoundingBox, FramePacket, TrackObservation
 from sightly_assist.replay import ReplayManifest
 from sightly_assist.warning_policy import AlertAction, WarningDecision
 
-
 BOX = BoundingBox(x_min=10, y_min=10, x_max=30, y_max=50)
 
 

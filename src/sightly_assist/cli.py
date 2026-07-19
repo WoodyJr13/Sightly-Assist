@@ -224,10 +224,7 @@ def record_oakd(
     typer.echo(f"Frames: {summary.frame_count}")
     typer.echo(f"IMU samples: {summary.imu_sample_count}")
     typer.echo(f"Duration: {summary.duration_s:.3f} s")
-    typer.echo(
-        "Synchronized frames: "
-        f"{summary.synchronized_frame_count}/{summary.frame_count}"
-    )
+    typer.echo("Synchronized frames: " f"{summary.synchronized_frame_count}/{summary.frame_count}")
     typer.echo(f"Manifest: {summary.manifest_path}")
 
 

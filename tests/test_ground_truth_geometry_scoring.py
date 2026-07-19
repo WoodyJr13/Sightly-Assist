@@ -17,7 +17,6 @@ from sightly_assist.risk import assess_relative_risk
 from sightly_assist.schemas import Vector2
 from sightly_assist.warning_policy import AlertAction, WarningDecision
 
-
 GT_BOX = BoundingBox(x_min=10, y_min=8, x_max=30, y_max=54)
 FALSE_BOX = BoundingBox(x_min=36, y_min=8, x_max=58, y_max=54)
 COLLISION_BOUNDARY_M = 1.0

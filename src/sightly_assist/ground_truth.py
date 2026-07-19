@@ -79,9 +79,7 @@ class GroundTruthEvent(BaseModel):
         """Require an ordered interval and an actual hazard-warning action."""
 
         if not self.start_timestamp_ns <= self.critical_timestamp_ns <= self.end_timestamp_ns:
-            raise ValueError(
-                "event timestamps must satisfy start <= critical <= end"
-            )
+            raise ValueError("event timestamps must satisfy start <= critical <= end")
         if self.minimum_warning_action in {AlertAction.NO_ALERT, AlertAction.ABSTAIN}:
             raise ValueError("minimum_warning_action must represent a hazard warning")
         return self
@@ -118,10 +116,7 @@ class GroundTruthAnnotationSet(BaseModel):
             raise ValueError("event IDs must be unique")
 
         object_ids = {
-            item.object_id
-            for frame in self.frames
-            for item in frame.objects
-            if not item.ignore
+            item.object_id for frame in self.frames for item in frame.objects if not item.ignore
         }
         minimum_timestamp = timestamps[0]
         maximum_timestamp = timestamps[-1]
