@@ -10,7 +10,13 @@ from pydantic import BaseModel, Field, model_validator
 
 from sightly_assist.depth_association import CameraPoint, DepthAssociation, DepthStatus
 from sightly_assist.motion_estimation import MotionEstimatorConfig, TrackMotionEstimator
-from sightly_assist.perception import Detection, FramePacket, MultiObjectTracker, TrackObservation
+from sightly_assist.perception import (
+    BoundingBox,
+    Detection,
+    FramePacket,
+    MultiObjectTracker,
+    TrackObservation,
+)
 from sightly_assist.perception_risk import (
     PerceptionRiskConfig,
     PerceptionRiskStatus,
@@ -24,17 +30,9 @@ class GroundTruthObservation(BaseModel):
     object_id: int = Field(ge=0)
     frame_id: int = Field(ge=0)
     class_name: str = Field(min_length=1)
-    bbox: object
+    bbox: BoundingBox
     camera_point: CameraPoint | None = None
     expected_collision: bool = False
-
-    @model_validator(mode="after")
-    def validate_box(self) -> GroundTruthObservation:
-        from sightly_assist.perception import BoundingBox
-
-        if not isinstance(self.bbox, BoundingBox):
-            self.bbox = BoundingBox.model_validate(self.bbox)
-        return self
 
 
 class TrackingBenchmarkFrame(BaseModel):
@@ -301,7 +299,7 @@ def _match_tracks_to_ground_truth(
         for track_index, track in enumerate(tracks):
             if truth.class_name != track.class_name:
                 continue
-            iou = truth.bbox.intersection_over_union(track.bbox)  # type: ignore[union-attr]
+            iou = truth.bbox.intersection_over_union(track.bbox)
             if iou >= minimum_iou:
                 candidates.append((iou, truth_index, track_index))
 
