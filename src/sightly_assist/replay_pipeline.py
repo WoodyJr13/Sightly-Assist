@@ -5,8 +5,10 @@ from __future__ import annotations
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 from pathlib import Path
+from time import perf_counter_ns
 
 import numpy as np
+from pydantic import BaseModel, Field
 
 from sightly_assist.depth_association import (
     CameraIntrinsics,
@@ -40,6 +42,21 @@ ImageLoader = Callable[[FramePacket, Path], np.ndarray]
 DepthLoader = Callable[[FramePacket, Path], np.ndarray | None]
 
 
+class ReplayStageTimings(BaseModel):
+    """Wall-clock processing time for each replay stage in milliseconds."""
+
+    image_load_ms: float = Field(ge=0)
+    detector_ms: float = Field(ge=0)
+    tracker_ms: float = Field(ge=0)
+    depth_load_ms: float = Field(ge=0)
+    depth_association_ms: float = Field(ge=0)
+    free_space_ms: float = Field(ge=0)
+    motion_ms: float = Field(ge=0)
+    risk_ms: float = Field(ge=0)
+    warning_ms: float = Field(ge=0)
+    total_ms: float = Field(ge=0)
+
+
 @dataclass(frozen=True)
 class ReplayResult:
     """Outputs produced for one replay frame."""
@@ -52,6 +69,7 @@ class ReplayResult:
     motion_estimates: tuple[MotionEstimate, ...] = ()
     risk_results: tuple[PerceptionRiskResult, ...] = ()
     warning_decision: WarningDecision | None = None
+    stage_timings: ReplayStageTimings | None = None
 
 
 def process_replay(
@@ -91,16 +109,32 @@ def process_replay(
 
     resolved_image_loader = image_loader or load_rgb
     for frame in iter_frames(manifest):
+        frame_started_ns = perf_counter_ns()
+
+        stage_started_ns = perf_counter_ns()
         image_bgr = resolved_image_loader(frame, root)
+        image_load_ms = _elapsed_ms(stage_started_ns)
         _validate_image(frame, image_bgr)
+
+        stage_started_ns = perf_counter_ns()
         detections = tuple(detector.predict(frame, image_bgr))
+        detector_ms = _elapsed_ms(stage_started_ns)
         _validate_detection_frames(frame, detections)
+
+        stage_started_ns = perf_counter_ns()
         tracks = tuple(tracker.update(frame, detections))
+        tracker_ms = _elapsed_ms(stage_started_ns)
 
         depth_map: np.ndarray | None = None
         depth_associations: tuple[DepthAssociation, ...] = ()
+        depth_load_ms = 0.0
+        depth_association_ms = 0.0
         if depth_loader is not None and camera_intrinsics is not None:
+            stage_started_ns = perf_counter_ns()
             depth_map = depth_loader(frame, root)
+            depth_load_ms = _elapsed_ms(stage_started_ns)
+
+            stage_started_ns = perf_counter_ns()
             depth_associations = associate_tracks_depth(
                 depth_map,
                 frame,
@@ -108,34 +142,59 @@ def process_replay(
                 camera_intrinsics,
                 depth_config,
             )
+            depth_association_ms = _elapsed_ms(stage_started_ns)
 
         free_space_analysis: FreeSpaceAnalysis | None = None
+        free_space_ms = 0.0
         if free_space_config is not None and camera_intrinsics is not None:
+            stage_started_ns = perf_counter_ns()
             free_space_analysis = analyze_free_space(
                 depth_map,
                 frame,
                 camera_intrinsics,
                 free_space_config,
             )
+            free_space_ms = _elapsed_ms(stage_started_ns)
 
         motion_estimates: tuple[MotionEstimate, ...] = ()
+        motion_ms = 0.0
         if motion_estimator is not None:
+            stage_started_ns = perf_counter_ns()
             motion_estimates = motion_estimator.update(frame, depth_associations)
+            motion_ms = _elapsed_ms(stage_started_ns)
 
         risk_results: tuple[PerceptionRiskResult, ...] = ()
+        risk_ms = 0.0
         timestamp_s = frame.timestamp_ns / 1_000_000_000
         if risk_config is not None:
+            stage_started_ns = perf_counter_ns()
             risk_results = assess_perception_risks(
                 tracks,
                 motion_estimates,
                 timestamp_s,
                 risk_config,
             )
+            risk_ms = _elapsed_ms(stage_started_ns)
 
         warning_decision: WarningDecision | None = None
+        warning_ms = 0.0
         if warning_policy is not None:
+            stage_started_ns = perf_counter_ns()
             warning_decision = warning_policy.evaluate(risk_results, timestamp_s)
+            warning_ms = _elapsed_ms(stage_started_ns)
 
+        timings = ReplayStageTimings(
+            image_load_ms=image_load_ms,
+            detector_ms=detector_ms,
+            tracker_ms=tracker_ms,
+            depth_load_ms=depth_load_ms,
+            depth_association_ms=depth_association_ms,
+            free_space_ms=free_space_ms,
+            motion_ms=motion_ms,
+            risk_ms=risk_ms,
+            warning_ms=warning_ms,
+            total_ms=_elapsed_ms(frame_started_ns),
+        )
         yield ReplayResult(
             frame=frame,
             detections=detections,
@@ -145,7 +204,12 @@ def process_replay(
             motion_estimates=motion_estimates,
             risk_results=risk_results,
             warning_decision=warning_decision,
+            stage_timings=timings,
         )
+
+
+def _elapsed_ms(started_ns: int) -> float:
+    return max(0.0, (perf_counter_ns() - started_ns) / 1_000_000)
 
 
 def _validate_image(frame: FramePacket, image_bgr: np.ndarray) -> None:

@@ -11,6 +11,10 @@ import typer
 
 from sightly_assist.dataset_recorder import DatasetRecorderConfig, record_rgbd_dataset
 from sightly_assist.oakd_source import OakDConfig, OakDSource
+from sightly_assist.replay_evaluation import (
+    ReplayEvaluationConfig,
+    run_onnx_replay_evaluation,
+)
 from sightly_assist.simulation import export_run, load_scenario, run_scenario, summarize_run
 from sightly_assist.tracking_report import export_locked_tracking_benchmark
 from sightly_assist.visualization import plot_top_down
@@ -144,6 +148,77 @@ def record_oakd(
     typer.echo(f"Duration: {summary.duration_s:.3f} s")
     typer.echo("Synchronized frames: " f"{summary.synchronized_frame_count}/{summary.frame_count}")
     typer.echo(f"Manifest: {summary.manifest_path}")
+
+
+@app.command("evaluate-replay")
+def evaluate_replay_command(
+    manifest_path: Annotated[
+        Path,
+        typer.Argument(exists=True, dir_okay=False, readable=True),
+    ],
+    model_path: Annotated[
+        Path,
+        typer.Argument(exists=True, dir_okay=False, readable=True),
+    ],
+    output_directory: Annotated[
+        Path,
+        typer.Option("--output", "-o", help="Evaluation output directory."),
+    ] = Path("reports/evaluations/latest"),
+    provider: Annotated[
+        str,
+        typer.Option("--provider", help="ONNX Runtime execution provider."),
+    ] = "CPUExecutionProvider",
+    video: Annotated[
+        bool,
+        typer.Option("--video/--no-video", help="Export an annotated replay video."),
+    ] = True,
+    audio: Annotated[
+        bool,
+        typer.Option("--audio/--no-audio", help="Export emitted warning audio cues."),
+    ] = True,
+    checksums: Annotated[
+        bool,
+        typer.Option(
+            "--checksums/--no-checksums",
+            help="Verify recorded RGB and depth file integrity before evaluation.",
+        ),
+    ] = True,
+    require_orientation: Annotated[
+        bool,
+        typer.Option(
+            "--require-orientation/--allow-missing-orientation",
+            help="Abstain from motion estimation when an orientation sample is missing.",
+        ),
+    ] = False,
+    overwrite: Annotated[
+        bool,
+        typer.Option("--overwrite", help="Replace an existing evaluation directory."),
+    ] = False,
+) -> None:
+    """Run an ONNX model and the complete hazard pipeline on a recorded dataset."""
+
+    summary = run_onnx_replay_evaluation(
+        manifest_path,
+        model_path,
+        output_directory,
+        ReplayEvaluationConfig(
+            verify_checksums=checksums,
+            render_video=video,
+            render_audio=audio,
+            require_orientation=require_orientation,
+            overwrite=overwrite,
+        ),
+        providers=(provider,),
+    )
+    total_latency = summary.stage_latencies["total_ms"]
+    typer.echo(f"Sequence: {summary.sequence_id}")
+    typer.echo(f"Frames: {summary.frame_count}")
+    typer.echo(f"Detections: {summary.detection_count}")
+    typer.echo(f"Predicted-collision frames: {summary.predicted_collision_frame_count}")
+    typer.echo(f"Emitted warnings: {summary.emitted_warning_count}")
+    typer.echo(f"Mean processing rate: {summary.mean_processing_fps:.2f} FPS")
+    typer.echo(f"P95 frame latency: {total_latency.p95_ms:.2f} ms")
+    typer.echo(f"Summary: {summary.summary_path}")
 
 
 if __name__ == "__main__":
