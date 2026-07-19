@@ -26,7 +26,7 @@ def test_state_store_bounds_history_and_versions() -> None:
 
     generator = DemoStateGenerator()
     first_version = store.publish(generator.state_at(3.0))
-    second_version = store.publish(generator.state_at(6.5))
+    second_version = store.publish(generator.state_at(7.8))
 
     assert first_version == 1
     assert second_version == 2
@@ -35,7 +35,7 @@ def test_state_store_bounds_history_and_versions() -> None:
 
 
 def test_http_and_websocket_expose_latest_state() -> None:
-    state = DemoStateGenerator().state_at(6.5)
+    state = DemoStateGenerator().state_at(7.8)
     store = MobileStateStore(state)
     app = create_mobile_app(store)
 
