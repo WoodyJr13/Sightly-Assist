@@ -10,6 +10,7 @@ from typing import Annotated, cast
 import typer
 
 from sightly_assist.simulation import export_run, load_scenario, run_scenario, summarize_run
+from sightly_assist.visualization import plot_top_down
 
 app = typer.Typer(no_args_is_help=True, help="Sightly Assist research tools.")
 
@@ -33,12 +34,20 @@ def simulate(
         Path,
         typer.Option("--output", "-o"),
     ] = Path("reports/runs/latest"),
+    plot: Annotated[
+        bool,
+        typer.Option("--plot/--no-plot", help="Export a top-down trajectory PNG."),
+    ] = True,
 ) -> None:
     """Run one deterministic YAML scenario and export its results."""
 
     scenario = load_scenario(scenario_path)
     steps = run_scenario(scenario)
     summary_path, timeline_path = export_run(scenario, steps, output_directory)
+    plot_path: Path | None = None
+    if plot:
+        plot_path = plot_top_down(scenario, steps, output_directory / "top_down.png")
+
     summary = summarize_run(scenario, steps)
     expectation_met = bool(summary["expectation_met"])
     peak_risk_score = cast(float, summary["peak_risk_score"])
@@ -48,6 +57,8 @@ def simulate(
     typer.echo(f"Peak risk: {peak_risk_score:.3f}")
     typer.echo(f"Summary: {summary_path}")
     typer.echo(f"Timeline: {timeline_path}")
+    if plot_path is not None:
+        typer.echo(f"Plot: {plot_path}")
 
     if not expectation_met:
         raise typer.Exit(code=2)
