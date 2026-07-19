@@ -73,9 +73,7 @@ def test_clear_depth_marks_all_corridors_clear() -> None:
     )
 
     assert analysis.context is FreeSpaceContext.CENTER_CLEAR
-    assert all(
-        corridor.status is CorridorStatus.CLEAR for corridor in analysis.corridors
-    )
+    assert all(corridor.status is CorridorStatus.CLEAR for corridor in analysis.corridors)
 
 
 def test_near_center_region_is_blocked_without_blocking_sides() -> None:
@@ -85,10 +83,7 @@ def test_near_center_region_is_blocked_without_blocking_sides() -> None:
     analysis = analyze_free_space(depth, _frame(), _intrinsics(), _config())
 
     assert analysis.context is FreeSpaceContext.CENTER_BLOCKED
-    assert (
-        analysis.corridor(CorridorDirection.CENTER).status
-        is CorridorStatus.BLOCKED
-    )
+    assert analysis.corridor(CorridorDirection.CENTER).status is CorridorStatus.BLOCKED
     assert analysis.corridor(CorridorDirection.LEFT).status is CorridorStatus.CLEAR
     assert analysis.corridor(CorridorDirection.RIGHT).status is CorridorStatus.CLEAR
 
@@ -121,9 +116,7 @@ def test_none_depth_marks_every_corridor_unknown() -> None:
     analysis = analyze_free_space(None, _frame(), _intrinsics(), _config())
 
     assert analysis.context is FreeSpaceContext.UNKNOWN
-    assert all(
-        corridor.status is CorridorStatus.UNKNOWN for corridor in analysis.corridors
-    )
+    assert all(corridor.status is CorridorStatus.UNKNOWN for corridor in analysis.corridors)
 
 
 def test_depth_scale_converts_millimeters() -> None:
@@ -185,10 +178,7 @@ def test_replay_pipeline_includes_free_space_context() -> None:
 
     assert len(results) == 1
     assert results[0].free_space_analysis is not None
-    assert (
-        results[0].free_space_analysis.context
-        is FreeSpaceContext.CENTER_BLOCKED
-    )
+    assert results[0].free_space_analysis.context is FreeSpaceContext.CENTER_BLOCKED
 
 
 def test_replay_free_space_requires_depth_and_intrinsics() -> None:

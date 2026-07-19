@@ -38,7 +38,7 @@ class RenderedAudioCue:
     def duration_s(self) -> float:
         """Return cue duration in seconds."""
 
-        return self.samples.shape[0] / self.sample_rate_hz
+        return float(self.samples.shape[0] / self.sample_rate_hz)
 
 
 class AudioCueMetadata(BaseModel):

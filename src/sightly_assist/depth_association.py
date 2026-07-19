@@ -52,7 +52,7 @@ class DepthAssociationConfig(BaseModel):
     inner_box_fraction: float = Field(gt=0, le=1, default=0.5)
     minimum_depth_m: float = Field(ge=0, default=0.15)
     maximum_depth_m: float = Field(gt=0, default=20.0)
-    minimum_valid_samples: int = Field(gt=0, default=9)
+    minimum_valid_samples: int = Field(gt=0, default=4)
     depth_scale_m: float = Field(gt=0, default=1.0)
     mad_multiplier: float = Field(gt=0, default=3.5)
     minimum_outlier_band_m: float = Field(gt=0, default=0.05)
@@ -133,8 +133,14 @@ def associate_track_depth(
 
     depth_m = float(np.median(inliers))
     mad_m = float(np.median(np.abs(inliers - depth_m)))
-    pixel_u = min(max((track.bbox.x_min + track.bbox.x_max) / 2.0, 0.0), frame.width_px - 1.0)
-    pixel_v = min(max((track.bbox.y_min + track.bbox.y_max) / 2.0, 0.0), frame.height_px - 1.0)
+    pixel_u = min(
+        max((track.bbox.x_min + track.bbox.x_max) / 2.0, 0.0),
+        frame.width_px - 1.0,
+    )
+    pixel_v = min(
+        max((track.bbox.y_min + track.bbox.y_max) / 2.0, 0.0),
+        frame.height_px - 1.0,
+    )
     point = deproject_pixel(pixel_u, pixel_v, depth_m, intrinsics)
 
     return DepthAssociation(
@@ -163,8 +169,7 @@ def associate_tracks_depth(
     """Associate all tracks in one frame with the same synchronized depth map."""
 
     return tuple(
-        associate_track_depth(depth_map, frame, track, intrinsics, config)
-        for track in tracks
+        associate_track_depth(depth_map, frame, track, intrinsics, config) for track in tracks
     )
 
 

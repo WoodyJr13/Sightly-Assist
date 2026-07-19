@@ -139,9 +139,7 @@ def test_warming_motion_withholds_risk() -> None:
 
 
 def test_unknown_motion_track_is_rejected() -> None:
-    motion = _motion(x_m=0.0, z_m=5.0, vx_mps=0.0, vz_mps=-2.0).model_copy(
-        update={"track_id": 99}
-    )
+    motion = _motion(x_m=0.0, z_m=5.0, vx_mps=0.0, vz_mps=-2.0).model_copy(update={"track_id": 99})
 
     with pytest.raises(ValueError, match="unknown track"):
         assess_perception_risks((_track(),), (motion,), timestamp_s=1.0)

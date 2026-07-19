@@ -15,6 +15,8 @@ The following modules contain project-specific integration, validation, safety p
 | Perception contracts | `perception.py` | Detector, tracker, frame, box, and observation interfaces |
 | Replay | `replay.py`, `replay_pipeline.py` | Recorded RGB-D sequence validation and processing |
 | Baseline tracking | `iou_tracker.py` | Transparent class-aware IoU assignment baseline |
+| ByteTrack integration | `bytetrack_adapter.py` | Conversion between project detections and the acquired Supervision ByteTrack backend |
+| Tracking evaluation | `tracking_benchmark.py`, `tracking_scenarios.py`, `tracking_report.py` | Locked scenarios, MOT metrics, latency, downstream collision metrics, and JSON reporting |
 | Depth association | `depth_association.py` | Robust ROI depth filtering and 3D deprojection |
 | Motion estimation | `motion_estimation.py` | Multi-frame robust 3D velocity estimation |
 | Perception risk | `perception_risk.py` | Conversion of measured tracks into CPA risk results |
@@ -31,10 +33,13 @@ The following modules contain project-specific integration, validation, safety p
 | Pydantic | Runtime schemas and validation | Acquired dependency | Version, license, project URL |
 | OpenCV | Image decoding, drawing, video export | Optional acquired dependency | Version, license, project URL |
 | ONNX Runtime | Neural-model execution | Optional acquired dependency | Version, license, project URL |
+| Supervision | Acquired ByteTrack implementation and detection container | Optional acquired dependency pinned to 0.27.0 | Version, MIT license, repository, ByteTrack paper |
 | PyYAML | Scenario configuration | Acquired dependency | Version, license, project URL |
 | Typer | Command-line interface | Acquired dependency | Version, license, project URL |
 | Matplotlib | Simulation visualization | Acquired dependency | Version, license, project URL |
 | Pytest/Hypothesis | Testing | Development dependencies | Versions, licenses, project URLs |
+
+The repository does not claim the ByteTrack algorithm or the Supervision implementation as original work. The original project work in this area is the typed adapter, locked scenario design, evaluation logic, downstream risk coupling, and interpretation of results.
 
 ## Models and datasets
 

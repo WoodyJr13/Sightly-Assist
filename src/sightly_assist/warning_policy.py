@@ -111,8 +111,7 @@ class WarningPolicy:
             if result.status is PerceptionRiskStatus.VALID and result.assessment is not None
         ]
         uncertain = any(
-            result.status is PerceptionRiskStatus.EXCESSIVE_UNCERTAINTY
-            for result in risk_results
+            result.status is PerceptionRiskStatus.EXCESSIVE_UNCERTAINTY for result in risk_results
         )
 
         if not valid:

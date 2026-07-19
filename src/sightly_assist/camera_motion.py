@@ -147,8 +147,7 @@ class RotationCompensatedMotionEstimator(TrackMotionEstimator):
         if frame.orientation_wxyz is None:
             if self.require_orientation:
                 unavailable = tuple(
-                    _remove_unstabilized_point(association)
-                    for association in associations
+                    _remove_unstabilized_point(association) for association in associations
                 )
                 return super().update(frame, unavailable)
             return super().update(frame, associations)

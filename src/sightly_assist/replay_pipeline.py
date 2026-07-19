@@ -80,13 +80,9 @@ def process_replay(
         raise ValueError(
             "depth_loader and camera_intrinsics must either both be provided or both be omitted"
         )
-    if motion_estimator is not None and (
-        depth_loader is None or camera_intrinsics is None
-    ):
+    if motion_estimator is not None and (depth_loader is None or camera_intrinsics is None):
         raise ValueError("motion_estimator requires depth_loader and camera_intrinsics")
-    if free_space_config is not None and (
-        depth_loader is None or camera_intrinsics is None
-    ):
+    if free_space_config is not None and (depth_loader is None or camera_intrinsics is None):
         raise ValueError("free_space_config requires depth_loader and camera_intrinsics")
     if risk_config is not None and motion_estimator is None:
         raise ValueError("risk_config requires motion_estimator")
