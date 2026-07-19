@@ -7,9 +7,11 @@ from pathlib import Path
 
 from sightly_assist.bytetrack_adapter import ByteTrackAdapter
 from sightly_assist.iou_tracker import IoUTracker
-from sightly_assist.tracking_benchmark import TrackingBenchmarkResult, benchmark_trackers
+from sightly_assist.tracking_benchmark import (
+    TrackingBenchmarkResult,
+    benchmark_trackers,
+)
 from sightly_assist.tracking_scenarios import locked_tracking_sequences
-
 
 BYTETRACK_REPORT_NAME = "bytetrack-supervision-0.27.0"
 
