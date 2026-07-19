@@ -1,4 +1,4 @@
-"""Hardware-independent replay perception, depth, motion, risk, and warning loop."""
+"""Hardware-independent replay perception, geometry, risk, and warning loop."""
 
 from __future__ import annotations
 
@@ -13,6 +13,11 @@ from sightly_assist.depth_association import (
     DepthAssociation,
     DepthAssociationConfig,
     associate_tracks_depth,
+)
+from sightly_assist.free_space import (
+    FreeSpaceAnalysis,
+    FreeSpaceConfig,
+    analyze_free_space,
 )
 from sightly_assist.motion_estimation import MotionEstimate, TrackMotionEstimator
 from sightly_assist.opencv_io import load_rgb
@@ -37,12 +42,13 @@ DepthLoader = Callable[[FramePacket, Path], np.ndarray | None]
 
 @dataclass(frozen=True)
 class ReplayResult:
-    """Perception, depth, motion, risk, and warning outputs for one replay frame."""
+    """Outputs produced for one replay frame."""
 
     frame: FramePacket
     detections: tuple[Detection, ...]
     tracks: tuple[TrackObservation, ...]
     depth_associations: tuple[DepthAssociation, ...] = ()
+    free_space_analysis: FreeSpaceAnalysis | None = None
     motion_estimates: tuple[MotionEstimate, ...] = ()
     risk_results: tuple[PerceptionRiskResult, ...] = ()
     warning_decision: WarningDecision | None = None
@@ -57,23 +63,31 @@ def process_replay(
     depth_loader: DepthLoader | None = None,
     camera_intrinsics: CameraIntrinsics | None = None,
     depth_config: DepthAssociationConfig | None = None,
+    free_space_config: FreeSpaceConfig | None = None,
     motion_estimator: TrackMotionEstimator | None = None,
     risk_config: PerceptionRiskConfig | None = None,
     warning_policy: WarningPolicy | None = None,
 ) -> Iterator[ReplayResult]:
-    """Run the recorded-data pipeline through a constrained warning decision.
+    """Run a recorded sequence through perception and warning decisions.
 
     OpenCV is used by default to decode RGB frames. Tests and alternate sensor
-    backends can provide another loader. Each later stage requires the outputs
-    and configuration of its preceding stage.
+    backends can provide another loader. Object depth association and free-space
+    analysis share the same synchronized depth map. Each later stage requires
+    the outputs and configuration of its preceding stage.
     """
 
     if (depth_loader is None) != (camera_intrinsics is None):
         raise ValueError(
             "depth_loader and camera_intrinsics must either both be provided or both be omitted"
         )
-    if motion_estimator is not None and (depth_loader is None or camera_intrinsics is None):
+    if motion_estimator is not None and (
+        depth_loader is None or camera_intrinsics is None
+    ):
         raise ValueError("motion_estimator requires depth_loader and camera_intrinsics")
+    if free_space_config is not None and (
+        depth_loader is None or camera_intrinsics is None
+    ):
+        raise ValueError("free_space_config requires depth_loader and camera_intrinsics")
     if risk_config is not None and motion_estimator is None:
         raise ValueError("risk_config requires motion_estimator")
     if warning_policy is not None and risk_config is None:
@@ -87,6 +101,7 @@ def process_replay(
         _validate_detection_frames(frame, detections)
         tracks = tuple(tracker.update(frame, detections))
 
+        depth_map: np.ndarray | None = None
         depth_associations: tuple[DepthAssociation, ...] = ()
         if depth_loader is not None and camera_intrinsics is not None:
             depth_map = depth_loader(frame, root)
@@ -96,6 +111,15 @@ def process_replay(
                 tracks,
                 camera_intrinsics,
                 depth_config,
+            )
+
+        free_space_analysis: FreeSpaceAnalysis | None = None
+        if free_space_config is not None and camera_intrinsics is not None:
+            free_space_analysis = analyze_free_space(
+                depth_map,
+                frame,
+                camera_intrinsics,
+                free_space_config,
             )
 
         motion_estimates: tuple[MotionEstimate, ...] = ()
@@ -121,6 +145,7 @@ def process_replay(
             detections=detections,
             tracks=tracks,
             depth_associations=depth_associations,
+            free_space_analysis=free_space_analysis,
             motion_estimates=motion_estimates,
             risk_results=risk_results,
             warning_decision=warning_decision,
