@@ -4,9 +4,12 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from pathlib import Path
 
 import numpy as np
+import onnx
 import pytest
+from onnx import TensorProto, helper, numpy_helper
 
 from sightly_assist.onnx_detector import OnnxYoloDetector
 from sightly_assist.perception import FramePacket
@@ -158,3 +161,43 @@ def test_end_to_end_nms_output_is_supported() -> None:
     assert detections[0].class_name == "person"
     assert detections[0].bbox.x_min == pytest.approx(80.0)
     assert detections[0].bbox.y_min == pytest.approx(40.0)
+
+
+def test_actual_onnxruntime_session_executes_generated_model(tmp_path: Path) -> None:
+    output = np.array(
+        [[[320.0], [320.0], [320.0], [160.0], [0.90], [0.05], [0.05]]],
+        dtype=np.float32,
+    )
+    constant = numpy_helper.from_array(output, name="constant_detections")
+    input_info = helper.make_tensor_value_info(
+        "images",
+        TensorProto.FLOAT,
+        [1, 3, 640, 640],
+    )
+    output_info = helper.make_tensor_value_info(
+        "detections",
+        TensorProto.FLOAT,
+        [1, 7, 1],
+    )
+    node = helper.make_node("Constant", inputs=[], outputs=["detections"], value=constant)
+    graph = helper.make_graph([node], "tiny_detector", [input_info], [output_info])
+    model = helper.make_model(
+        graph,
+        producer_name="sightly-assist-tests",
+        opset_imports=[helper.make_operatorsetid("", 13)],
+    )
+    model.ir_version = 8
+    onnx.checker.check_model(model)
+    model_path = tmp_path / "tiny_detector.onnx"
+    onnx.save(model, model_path)
+
+    detector = OnnxYoloDetector(
+        model_path=model_path,
+        class_names=("person", "bicycle", "car"),
+        allowed_class_names=None,
+    )
+    detections = detector.predict(_frame(), np.zeros((160, 320, 3), dtype=np.uint8))
+
+    assert len(detections) == 1
+    assert detections[0].class_name == "person"
+    assert detections[0].confidence == pytest.approx(0.9)
