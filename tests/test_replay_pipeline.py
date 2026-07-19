@@ -18,7 +18,8 @@ from sightly_assist.replay_pipeline import process_replay
 class SequenceDetector:
     """Return one deterministic person detection per frame."""
 
-    def predict(self, frame: FramePacket) -> Sequence[Detection]:
+    def predict(self, frame: FramePacket, image_bgr: np.ndarray) -> Sequence[Detection]:
+        assert image_bgr.shape == (frame.height_px, frame.width_px, 3)
         return (
             Detection(
                 frame_id=frame.frame_id,
@@ -33,7 +34,8 @@ class SequenceDetector:
 class WrongFrameDetector:
     """Return an invalid detection for regression testing."""
 
-    def predict(self, frame: FramePacket) -> Sequence[Detection]:
+    def predict(self, frame: FramePacket, image_bgr: np.ndarray) -> Sequence[Detection]:
+        del image_bgr
         return (
             Detection(
                 frame_id=frame.frame_id + 1,
@@ -81,6 +83,11 @@ def _intrinsics() -> CameraIntrinsics:
     )
 
 
+def _fake_image_loader(frame: FramePacket, root: Path) -> np.ndarray:
+    del root
+    return np.zeros((frame.height_px, frame.width_px, 3), dtype=np.uint8)
+
+
 def test_process_replay_preserves_track_identity(tmp_path: Path) -> None:
     loaded_frames: list[int] = []
 
@@ -119,6 +126,7 @@ def test_process_replay_associates_depth_with_tracks(tmp_path: Path) -> None:
             tmp_path,
             SequenceDetector(),
             IoUTracker(),
+            image_loader=_fake_image_loader,
             depth_loader=fake_depth_loader,
             camera_intrinsics=_intrinsics(),
         )
@@ -141,6 +149,7 @@ def test_process_replay_requires_complete_depth_configuration(tmp_path: Path) ->
                 tmp_path,
                 SequenceDetector(),
                 IoUTracker(),
+                image_loader=_fake_image_loader,
                 depth_loader=lambda frame, root: None,
             )
         )
@@ -154,5 +163,6 @@ def test_process_replay_rejects_wrong_frame_detection(tmp_path: Path) -> None:
                 tmp_path,
                 WrongFrameDetector(),
                 IoUTracker(),
+                image_loader=_fake_image_loader,
             )
         )
