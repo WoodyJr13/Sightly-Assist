@@ -38,6 +38,29 @@ class BoundingBox(BaseModel):
 
         return self.y_max - self.y_min
 
+    @property
+    def area(self) -> float:
+        """Return box area in square pixels."""
+
+        return self.width * self.height
+
+    def intersection_over_union(self, other: BoundingBox) -> float:
+        """Return intersection-over-union with another box."""
+
+        intersection_width = max(
+            0.0,
+            min(self.x_max, other.x_max) - max(self.x_min, other.x_min),
+        )
+        intersection_height = max(
+            0.0,
+            min(self.y_max, other.y_max) - max(self.y_min, other.y_min),
+        )
+        intersection_area = intersection_width * intersection_height
+        union_area = self.area + other.area - intersection_area
+        if union_area <= 0.0:
+            return 0.0
+        return intersection_area / union_area
+
 
 class FramePacket(BaseModel):
     """Metadata for one synchronized frame without embedding image bytes."""
