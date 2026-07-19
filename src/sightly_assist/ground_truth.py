@@ -31,9 +31,12 @@ class GroundTruthObject(BaseModel):
     def validate_depth_and_position(self) -> GroundTruthObject:
         """Keep separately entered depth and 3D position mutually consistent."""
 
-        if self.depth_m is not None and self.position is not None:
-            if abs(self.depth_m - self.position.z_m) > 0.05:
-                raise ValueError("depth_m and position.z_m must agree within 0.05 m")
+        if (
+            self.depth_m is not None
+            and self.position is not None
+            and abs(self.depth_m - self.position.z_m) > 0.05
+        ):
+            raise ValueError("depth_m and position.z_m must agree within 0.05 m")
         return self
 
 
