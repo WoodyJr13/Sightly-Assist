@@ -109,7 +109,9 @@ class MobileHealth(BaseModel):
 class MobileStateStore:
     """Thread-safe latest-state store with a bounded telemetry history."""
 
-    def __init__(self, initial_state: MobileSystemState | None = None, history_size: int = 300) -> None:
+    def __init__(
+        self, initial_state: MobileSystemState | None = None, history_size: int = 300
+    ) -> None:
         if history_size <= 0:
             raise ValueError("history_size must be positive")
         self._lock = RLock()
@@ -189,9 +191,7 @@ def mobile_state_from_replay_result(
         risk = risk_by_track.get(track.track_id)
         assessment = risk.assessment if risk is not None else None
         velocity = (
-            motion.velocity
-            if motion is not None and motion.status is MotionStatus.VALID
-            else None
+            motion.velocity if motion is not None and motion.status is MotionStatus.VALID else None
         )
         assessment_status = (
             risk.status.value if risk is not None else PerceptionRiskStatus.MOTION_UNAVAILABLE.value
@@ -259,18 +259,16 @@ def mobile_state_from_replay_result(
             detector_latency_ms=timings.detector_ms if timings is not None else 0.0,
             tracker_latency_ms=timings.tracker_ms if timings is not None else 0.0,
             depth_latency_ms=(
-                timings.depth_load_ms + timings.depth_association_ms
-                if timings is not None
-                else 0.0
+                timings.depth_load_ms + timings.depth_association_ms if timings is not None else 0.0
             ),
             motion_latency_ms=timings.motion_ms if timings is not None else 0.0,
-            risk_latency_ms=(
-                timings.risk_ms + timings.warning_ms if timings is not None else 0.0
-            ),
+            risk_latency_ms=(timings.risk_ms + timings.warning_ms if timings is not None else 0.0),
         ),
         synchronized=result.frame.synchronized,
         orientation_available=result.frame.orientation_wxyz is not None,
-        system_message=_system_message(warning.action if warning is not None else AlertAction.NO_ALERT),
+        system_message=_system_message(
+            warning.action if warning is not None else AlertAction.NO_ALERT
+        ),
     )
 
 
