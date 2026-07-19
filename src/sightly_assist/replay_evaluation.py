@@ -174,9 +174,7 @@ def evaluate_replay(
     if settings.render_audio:
         audio_directory = destination / "audio"
         decisions = tuple(
-            result.warning_decision
-            for result in results
-            if result.warning_decision is not None
+            result.warning_decision for result in results if result.warning_decision is not None
         )
         export_warning_audio_cues(decisions, audio_directory)
 
@@ -206,9 +204,7 @@ def _summarize(
     audio_directory: Path | None,
     model_sha256: str | None,
 ) -> ReplayEvaluationSummary:
-    timings = tuple(
-        result.stage_timings for result in results if result.stage_timings is not None
-    )
+    timings = tuple(result.stage_timings for result in results if result.stage_timings is not None)
     if len(timings) != len(results):
         raise RuntimeError("Every evaluated replay frame must contain stage timings")
 
@@ -307,17 +303,13 @@ def _serialize_result(result: ReplayResult) -> dict[str, object]:
         "frame": result.frame.model_dump(mode="json"),
         "detections": [item.model_dump(mode="json") for item in result.detections],
         "tracks": [item.model_dump(mode="json") for item in result.tracks],
-        "depth_associations": [
-            item.model_dump(mode="json") for item in result.depth_associations
-        ],
+        "depth_associations": [item.model_dump(mode="json") for item in result.depth_associations],
         "free_space_analysis": (
             result.free_space_analysis.model_dump(mode="json")
             if result.free_space_analysis is not None
             else None
         ),
-        "motion_estimates": [
-            item.model_dump(mode="json") for item in result.motion_estimates
-        ],
+        "motion_estimates": [item.model_dump(mode="json") for item in result.motion_estimates],
         "risk_results": [item.model_dump(mode="json") for item in result.risk_results],
         "warning_decision": (
             result.warning_decision.model_dump(mode="json")
