@@ -28,6 +28,7 @@ dev = [
   "pytest>=8.2,<9",
   "pytest-cov>=5,<7",
   "ruff>=0.5,<1",
+  "trackers==2.5.0",
 ]
 visualization = ["matplotlib>=3.8,<4"]
 vision = ["opencv-python-headless>=4.13,<5"]
@@ -35,6 +36,7 @@ detector = [
   "onnxruntime>=1.20,<2",
   "opencv-python-headless>=4.13,<5",
 ]
+tracking = ["trackers==2.5.0"]
 
 [project.scripts]
 sightly = "sightly_assist.cli:app"
