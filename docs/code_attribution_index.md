@@ -16,7 +16,8 @@ The following modules contain project-specific integration, validation, safety p
 | Capture contracts | `capture.py` | Hardware-independent RGB-D, calibration, IMU, and source interfaces |
 | OAK-D integration | `oakd_source.py` | DepthAI v3 pipeline configuration, synchronization, timestamp conversion, IMU parsing, and source adaptation |
 | Dataset recording | `dataset_recorder.py` | Atomic RGB-D/IMU export, replay manifest creation, and file-integrity checks |
-| Replay | `replay.py`, `replay_pipeline.py` | Recorded RGB-D sequence validation and processing |
+| Replay | `replay.py`, `replay_pipeline.py` | Recorded RGB-D sequence validation, processing, and per-stage timing |
+| Replay evaluation | `replay_evaluation.py` | Integrity checks, model fingerprinting, complete pipeline orchestration, frame JSONL, aggregate metrics, and evidence exports |
 | Baseline tracking | `iou_tracker.py` | Transparent class-aware IoU assignment baseline |
 | ByteTrack integration | `bytetrack_adapter.py` | Conversion between project detections and the acquired Supervision ByteTrack backend |
 | Tracking evaluation | `tracking_benchmark.py`, `tracking_scenarios.py`, `tracking_report.py` | Locked scenarios, MOT metrics, latency, downstream collision metrics, and JSON reporting |
@@ -32,7 +33,7 @@ The following modules contain project-specific integration, validation, safety p
 
 | Library | Role | Acquisition status | Required final attribution |
 |---|---|---|---|
-| NumPy | Numerical arrays, depth storage, and statistics | Acquired dependency | Version, license, project URL |
+| NumPy | Numerical arrays, depth storage, statistics, and latency summaries | Acquired dependency | Version, license, project URL |
 | Pydantic | Runtime schemas and validation | Acquired dependency | Version, license, project URL |
 | OpenCV | Image decoding, lossless PNG recording, drawing, and video export | Optional acquired dependency | Version, license, project URL |
 | DepthAI | OAK/OAK4 camera, stereo-depth, synchronization, calibration, and IMU runtime | Optional acquired dependency pinned to 3.7.1 | Version, MIT license, Luxonis repository and documentation |
@@ -43,7 +44,7 @@ The following modules contain project-specific integration, validation, safety p
 | Matplotlib | Simulation visualization | Acquired dependency | Version, license, project URL |
 | Pytest/Hypothesis | Testing | Development dependencies | Versions, licenses, project URLs |
 
-The repository does not claim DepthAI, StereoDepth, Sync, ImageAlign, the OAK hardware interface, the ByteTrack algorithm, or the Supervision implementation as original work. Original work in the capture milestone consists of the source abstraction, conservative stream configuration, timestamp and IMU adaptation, atomic research-dataset format, provenance metadata, checksum validation, replay integration, and associated tests.
+The repository does not claim DepthAI, StereoDepth, Sync, ImageAlign, the OAK hardware interface, ONNX Runtime, the detector architecture or weights, the ByteTrack algorithm, or the Supervision implementation as original work. Original project work in the capture and evaluation layers consists of the source abstraction, conservative stream configuration, timestamp and IMU adaptation, atomic research-dataset format, provenance metadata, checksum validation, typed orchestration, timing instrumentation, model fingerprinting, result schemas, evidence exports, and associated tests.
 
 ## Models and datasets
 
@@ -70,6 +71,19 @@ Every recorded Sightly Assist dataset must additionally record:
 - orientation availability;
 - per-frame file checksums;
 - scenario, environment, and consent/eligibility notes maintained outside the raw capture when applicable.
+
+Every formal evaluation must record:
+
+- repository commit SHA;
+- dataset manifest checksum;
+- detector-model checksum;
+- execution provider and numerical precision;
+- tracker and configuration;
+- pipeline thresholds;
+- hardware and power mode;
+- repeated-run procedure;
+- ground-truth source;
+- generated summary and frame-result paths.
 
 ## Adapted algorithms
 
