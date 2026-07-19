@@ -1,0 +1,18 @@
+scenario_id: receding
+duration_s: 5.0
+time_step_s: 0.1
+prediction_horizon_s: 5.0
+safety_margin_m: 0.35
+observer:
+  id: observer
+  position_m: {x: 0.0, z: 0.0}
+  velocity_mps: {x: 0.0, z: 1.2}
+  radius_m: 0.3
+obstacles:
+  - id: pedestrian_1
+    position_m: {x: 0.0, z: 4.0}
+    velocity_mps: {x: 0.0, z: 2.0}
+    radius_m: 0.35
+expected:
+  hazard: false
+  primary_obstacle_id: null
