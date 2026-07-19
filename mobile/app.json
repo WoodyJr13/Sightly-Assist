@@ -1,0 +1,17 @@
+{
+  "expo": {
+    "name": "Sightly Assist",
+    "slug": "sightly-assist",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "scheme": "sightlyassist",
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {},
+    "web": {
+      "bundler": "metro"
+    }
+  }
+}
