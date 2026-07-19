@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 
@@ -29,7 +29,7 @@ def load_rgb(frame: FramePacket, root: Path) -> np.ndarray:
 
     cv2 = _import_cv2()
     path = root / frame.rgb_path
-    image = cv2.imread(str(path), cv2.IMREAD_COLOR)
+    image = cast(np.ndarray | None, cv2.imread(str(path), cv2.IMREAD_COLOR))
     if image is None:
         raise FileNotFoundError(f"Could not decode RGB frame: {path}")
 
@@ -50,7 +50,7 @@ def load_depth(frame: FramePacket, root: Path) -> np.ndarray | None:
 
     path = root / frame.depth_path
     try:
-        depth = np.load(path, allow_pickle=False)
+        depth = cast(np.ndarray, np.load(path, allow_pickle=False))
     except FileNotFoundError:
         raise FileNotFoundError(f"Depth frame does not exist: {path}") from None
 
