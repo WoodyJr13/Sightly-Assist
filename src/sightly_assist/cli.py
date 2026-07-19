@@ -10,7 +10,13 @@ from typing import Annotated, cast
 import typer
 
 from sightly_assist.dataset_recorder import DatasetRecorderConfig, record_rgbd_dataset
+from sightly_assist.ground_truth import create_annotation_template, save_ground_truth
+from sightly_assist.ground_truth_scoring import (
+    GroundTruthScoringConfig,
+    score_evaluation_files,
+)
 from sightly_assist.oakd_source import OakDConfig, OakDSource
+from sightly_assist.replay import load_manifest
 from sightly_assist.replay_evaluation import (
     ReplayEvaluationConfig,
     run_onnx_replay_evaluation,
@@ -90,6 +96,78 @@ def benchmark_tracking(
             f"risk_F1={metrics.collision_f1:.3f} "
             f"p95={metrics.latency_p95_ms:.3f} ms"
         )
+
+
+@app.command("init-annotations")
+def init_annotations(
+    manifest_path: Annotated[
+        Path,
+        typer.Argument(exists=True, dir_okay=False, readable=True),
+    ],
+    annotator: Annotated[
+        str,
+        typer.Option("--annotator", help="Name or stable ID of the annotator."),
+    ],
+    output_path: Annotated[
+        Path,
+        typer.Option("--output", "-o", help="Ground-truth JSON destination."),
+    ] = Path("annotations/ground_truth.json"),
+) -> None:
+    """Create an empty frame-aligned ground-truth annotation template."""
+
+    manifest = load_manifest(manifest_path)
+    annotations = create_annotation_template(manifest, annotator)
+    save_ground_truth(annotations, output_path)
+    typer.echo(f"Sequence: {annotations.sequence_id}")
+    typer.echo(f"Frames: {len(annotations.frames)}")
+    typer.echo(f"Template: {output_path}")
+
+
+@app.command("score-replay")
+def score_replay(
+    annotations_path: Annotated[
+        Path,
+        typer.Argument(exists=True, dir_okay=False, readable=True),
+    ],
+    results_path: Annotated[
+        Path,
+        typer.Argument(exists=True, dir_okay=False, readable=True),
+    ],
+    output_path: Annotated[
+        Path,
+        typer.Option("--output", "-o", help="Quantitative score report path."),
+    ] = Path("reports/scores/latest.json"),
+    match_iou: Annotated[
+        float,
+        typer.Option("--match-iou", help="Minimum IoU for GT-to-track matching."),
+    ] = 0.30,
+    class_agnostic: Annotated[
+        bool,
+        typer.Option(
+            "--class-agnostic/--class-aware",
+            help="Allow matching across differing class labels.",
+        ),
+    ] = False,
+) -> None:
+    """Score frame-level replay results against independent ground truth."""
+
+    report = score_evaluation_files(
+        annotations_path,
+        results_path,
+        output_path,
+        GroundTruthScoringConfig(
+            match_iou_threshold=match_iou,
+            class_agnostic_matching=class_agnostic,
+        ),
+    )
+    typer.echo(f"Sequence: {report.sequence_id}")
+    typer.echo(f"Track recall: {report.track_recall:.3f}")
+    typer.echo(f"Identity switches: {report.identity_switches}")
+    typer.echo(f"Collision-frame F1: {report.collision_frame_f1:.3f}")
+    typer.echo(f"Collision-event F1: {report.collision_event_f1:.3f}")
+    typer.echo(f"Warning-event recall: {report.warning_event_recall:.3f}")
+    typer.echo(f"False warnings/min: {report.false_warnings_per_minute:.3f}")
+    typer.echo(f"Report: {output_path}")
 
 
 @app.command("record-oakd")

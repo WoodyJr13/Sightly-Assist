@@ -18,6 +18,8 @@ The following modules contain project-specific integration, validation, safety p
 | Dataset recording | `dataset_recorder.py` | Atomic RGB-D/IMU export, replay manifest creation, and file-integrity checks |
 | Replay | `replay.py`, `replay_pipeline.py` | Recorded RGB-D sequence validation, processing, and per-stage timing |
 | Replay evaluation | `replay_evaluation.py` | Integrity checks, model fingerprinting, complete pipeline orchestration, frame JSONL, aggregate metrics, and evidence exports |
+| Ground-truth annotations | `ground_truth.py` | Versioned frame/object/event labels, manifest-aligned templates, consistency validation, and deterministic JSON export |
+| Ground-truth scoring | `ground_truth_scoring.py` | Transparent IoU matching, tracking continuity, geometry error, CPA, collision-event, warning-lead, and false-warning metrics |
 | Baseline tracking | `iou_tracker.py` | Transparent class-aware IoU assignment baseline |
 | ByteTrack integration | `bytetrack_adapter.py` | Conversion between project detections and the acquired Supervision ByteTrack backend |
 | Tracking evaluation | `tracking_benchmark.py`, `tracking_scenarios.py`, `tracking_report.py` | Locked scenarios, MOT metrics, latency, downstream collision metrics, and JSON reporting |
@@ -44,7 +46,7 @@ The following modules contain project-specific integration, validation, safety p
 | Matplotlib | Simulation visualization | Acquired dependency | Version, license, project URL |
 | Pytest/Hypothesis | Testing | Development dependencies | Versions, licenses, project URLs |
 
-The repository does not claim DepthAI, StereoDepth, Sync, ImageAlign, the OAK hardware interface, ONNX Runtime, the detector architecture or weights, the ByteTrack algorithm, or the Supervision implementation as original work. Original project work in the capture and evaluation layers consists of the source abstraction, conservative stream configuration, timestamp and IMU adaptation, atomic research-dataset format, provenance metadata, checksum validation, typed orchestration, timing instrumentation, model fingerprinting, result schemas, evidence exports, and associated tests.
+The repository does not claim DepthAI, StereoDepth, Sync, ImageAlign, the OAK hardware interface, ONNX Runtime, the detector architecture or weights, the ByteTrack algorithm, or the Supervision implementation as original work. Original project work in the capture and evaluation layers consists of the source abstraction, conservative stream configuration, timestamp and IMU adaptation, atomic research-dataset format, provenance metadata, checksum validation, typed orchestration, timing instrumentation, model fingerprinting, annotation schemas, transparent scoring rules, result schemas, evidence exports, and associated tests.
 
 ## Models and datasets
 
@@ -82,8 +84,10 @@ Every formal evaluation must record:
 - pipeline thresholds;
 - hardware and power mode;
 - repeated-run procedure;
-- ground-truth source;
-- generated summary and frame-result paths.
+- ground-truth source and annotator;
+- annotation-file checksum;
+- scoring configuration and schema version;
+- generated summary, frame-result, and score paths.
 
 ## Adapted algorithms
 
