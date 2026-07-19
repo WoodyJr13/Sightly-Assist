@@ -1,0 +1,18 @@
+scenario_id: crossing
+duration_s: 5.0
+time_step_s: 0.1
+prediction_horizon_s: 5.0
+safety_margin_m: 0.35
+observer:
+  id: observer
+  position_m: {x: 0.0, z: 0.0}
+  velocity_mps: {x: 0.0, z: 1.0}
+  radius_m: 0.3
+obstacles:
+  - id: bicycle_1
+    position_m: {x: -4.0, z: 4.0}
+    velocity_mps: {x: 1.2, z: 0.0}
+    radius_m: 0.4
+expected:
+  hazard: true
+  primary_obstacle_id: bicycle_1
