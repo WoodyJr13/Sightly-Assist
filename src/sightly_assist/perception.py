@@ -74,6 +74,10 @@ class FramePacket(BaseModel):
     depth_path: str | None = None
     synchronized: bool = True
     orientation_wxyz: tuple[float, float, float, float] | None = None
+    device_sequence_num: int | None = Field(default=None, ge=0)
+    sync_error_ns: int | None = Field(default=None, ge=0)
+    rgb_sha256: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+    depth_sha256: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
 
 
 class Detection(BaseModel):

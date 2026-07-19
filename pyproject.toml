@@ -19,6 +19,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
+  "depthai==3.7.1",
   "hypothesis>=6.100,<7",
   "matplotlib>=3.8,<4",
   "mypy>=1.10,<2",
@@ -38,6 +39,10 @@ detector = [
   "opencv-python-headless>=4.13,<5",
 ]
 tracking = ["supervision==0.27.0"]
+oak = [
+  "depthai==3.7.1",
+  "opencv-python-headless>=4.13,<5",
+]
 
 [project.scripts]
 sightly = "sightly_assist.cli:app"

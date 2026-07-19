@@ -8,6 +8,7 @@ from pathlib import Path
 
 from pydantic import BaseModel, Field, model_validator
 
+from sightly_assist.depth_association import CameraIntrinsics
 from sightly_assist.perception import FramePacket
 
 
@@ -17,10 +18,14 @@ class ReplayManifest(BaseModel):
     sequence_id: str = Field(min_length=1)
     source: str = Field(min_length=1)
     frames: list[FramePacket] = Field(min_length=1)
+    intrinsics: CameraIntrinsics | None = None
+    imu_path: str | None = None
+    capture_metadata_path: str | None = None
+    format_version: int = Field(ge=1, default=1)
 
     @model_validator(mode="after")
     def validate_sequence(self) -> ReplayManifest:
-        """Require unique ordered frame IDs and timestamps."""
+        """Require unique ordered frame IDs and nondecreasing timestamps."""
 
         frame_ids = [frame.frame_id for frame in self.frames]
         timestamps = [frame.timestamp_ns for frame in self.frames]
@@ -47,11 +52,14 @@ def iter_frames(manifest: ReplayManifest) -> Iterator[FramePacket]:
 
 
 def validate_replay_files(manifest: ReplayManifest, root: Path) -> list[str]:
-    """Return missing RGB or depth paths referenced by a manifest."""
+    """Return missing frame, IMU, or capture-metadata paths referenced by a manifest."""
 
     missing: list[str] = []
     for frame in manifest.frames:
         for relative_path in (frame.rgb_path, frame.depth_path):
             if relative_path is not None and not (root / relative_path).is_file():
                 missing.append(relative_path)
+    for relative_path in (manifest.imu_path, manifest.capture_metadata_path):
+        if relative_path is not None and not (root / relative_path).is_file():
+            missing.append(relative_path)
     return missing

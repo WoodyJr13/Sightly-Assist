@@ -13,6 +13,9 @@ The following modules contain project-specific integration, validation, safety p
 | Geometry and risk | `src/sightly_assist/geometry.py`, `risk.py` | Relative motion, closest approach, collision boundary, engineering risk score |
 | Simulation | `simulation.py`, `scenarios/` | Deterministic synthetic scenario execution and exports |
 | Perception contracts | `perception.py` | Detector, tracker, frame, box, and observation interfaces |
+| Capture contracts | `capture.py` | Hardware-independent RGB-D, calibration, IMU, and source interfaces |
+| OAK-D integration | `oakd_source.py` | DepthAI v3 pipeline configuration, synchronization, timestamp conversion, IMU parsing, and source adaptation |
+| Dataset recording | `dataset_recorder.py` | Atomic RGB-D/IMU export, replay manifest creation, and file-integrity checks |
 | Replay | `replay.py`, `replay_pipeline.py` | Recorded RGB-D sequence validation and processing |
 | Baseline tracking | `iou_tracker.py` | Transparent class-aware IoU assignment baseline |
 | ByteTrack integration | `bytetrack_adapter.py` | Conversion between project detections and the acquired Supervision ByteTrack backend |
@@ -29,9 +32,10 @@ The following modules contain project-specific integration, validation, safety p
 
 | Library | Role | Acquisition status | Required final attribution |
 |---|---|---|---|
-| NumPy | Numerical arrays and statistics | Acquired dependency | Version, license, project URL |
+| NumPy | Numerical arrays, depth storage, and statistics | Acquired dependency | Version, license, project URL |
 | Pydantic | Runtime schemas and validation | Acquired dependency | Version, license, project URL |
-| OpenCV | Image decoding, drawing, video export | Optional acquired dependency | Version, license, project URL |
+| OpenCV | Image decoding, lossless PNG recording, drawing, and video export | Optional acquired dependency | Version, license, project URL |
+| DepthAI | OAK/OAK4 camera, stereo-depth, synchronization, calibration, and IMU runtime | Optional acquired dependency pinned to 3.7.1 | Version, MIT license, Luxonis repository and documentation |
 | ONNX Runtime | Neural-model execution | Optional acquired dependency | Version, license, project URL |
 | Supervision | Acquired ByteTrack implementation and detection container | Optional acquired dependency pinned to 0.27.0 | Version, MIT license, repository, ByteTrack paper |
 | PyYAML | Scenario configuration | Acquired dependency | Version, license, project URL |
@@ -39,7 +43,7 @@ The following modules contain project-specific integration, validation, safety p
 | Matplotlib | Simulation visualization | Acquired dependency | Version, license, project URL |
 | Pytest/Hypothesis | Testing | Development dependencies | Versions, licenses, project URLs |
 
-The repository does not claim the ByteTrack algorithm or the Supervision implementation as original work. The original project work in this area is the typed adapter, locked scenario design, evaluation logic, downstream risk coupling, and interpretation of results.
+The repository does not claim DepthAI, StereoDepth, Sync, ImageAlign, the OAK hardware interface, the ByteTrack algorithm, or the Supervision implementation as original work. Original work in the capture milestone consists of the source abstraction, conservative stream configuration, timestamp and IMU adaptation, atomic research-dataset format, provenance metadata, checksum validation, replay integration, and associated tests.
 
 ## Models and datasets
 
@@ -53,6 +57,19 @@ No final detector weights or research dataset should be considered selected unti
 - export procedure;
 - modifications or fine-tuning;
 - benchmark configuration.
+
+Every recorded Sightly Assist dataset must additionally record:
+
+- device model and identifier;
+- DepthAI version;
+- requested stream dimensions and rate;
+- camera intrinsics;
+- RGB/depth synchronization error;
+- depth unit and storage type;
+- enabled IMU report families and rate;
+- orientation availability;
+- per-frame file checksums;
+- scenario, environment, and consent/eligibility notes maintained outside the raw capture when applicable.
 
 ## Adapted algorithms
 
