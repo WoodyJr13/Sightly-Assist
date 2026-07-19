@@ -169,8 +169,7 @@ def associate_tracks_depth(
     """Associate all tracks in one frame with the same synchronized depth map."""
 
     return tuple(
-        associate_track_depth(depth_map, frame, track, intrinsics, config)
-        for track in tracks
+        associate_track_depth(depth_map, frame, track, intrinsics, config) for track in tracks
     )
 
 

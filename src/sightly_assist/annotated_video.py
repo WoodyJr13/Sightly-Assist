@@ -93,9 +93,7 @@ def annotate_frame(
         motion = motions.get(track.track_id)
         if motion is not None and motion.velocity is not None:
             lines.append(
-                "vel "
-                f"x={motion.velocity.x_mps:+.2f} "
-                f"z={motion.velocity.z_mps:+.2f} m/s"
+                "vel " f"x={motion.velocity.x_mps:+.2f} " f"z={motion.velocity.z_mps:+.2f} m/s"
             )
         elif motion is not None:
             lines.append(f"motion {motion.status.value}")

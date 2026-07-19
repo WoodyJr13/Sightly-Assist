@@ -67,9 +67,7 @@ class FreeSpaceConfig(BaseModel):
         if self.clear_depth_m <= self.blocked_depth_m:
             raise ValueError("clear_depth_m must exceed blocked_depth_m")
         if self.blocked_obstacle_fraction <= self.constrained_obstacle_fraction:
-            raise ValueError(
-                "blocked_obstacle_fraction must exceed constrained_obstacle_fraction"
-            )
+            raise ValueError("blocked_obstacle_fraction must exceed constrained_obstacle_fraction")
         return self
 
 
@@ -123,8 +121,7 @@ def analyze_free_space(
     masks = _corridor_masks(frame, intrinsics, settings, row_start, row_end)
     if depth_map is None:
         corridors = tuple(
-            _unknown_assessment(direction, int(mask.sum()))
-            for direction, mask in masks
+            _unknown_assessment(direction, int(mask.sum())) for direction, mask in masks
         )
         typed_corridors = _as_corridor_tuple(corridors)
         return FreeSpaceAnalysis(
@@ -139,8 +136,7 @@ def analyze_free_space(
     metric_depth = np.asarray(depth_map[row_start:row_end], dtype=np.float64)
     metric_depth *= settings.depth_scale_m
     assessments = tuple(
-        _assess_corridor(metric_depth, direction, mask, settings)
-        for direction, mask in masks
+        _assess_corridor(metric_depth, direction, mask, settings) for direction, mask in masks
     )
     typed_assessments = _as_corridor_tuple(assessments)
     center = next(
@@ -171,19 +167,15 @@ def _corridor_masks(
     tuple[CorridorDirection, np.ndarray],
 ]:
     columns = np.arange(frame.width_px, dtype=np.float64)
-    reference_x_m = (
-        (columns - intrinsics.cx_px) * config.reference_depth_m / intrinsics.fx_px
-    )
+    reference_x_m = (columns - intrinsics.cx_px) * config.reference_depth_m / intrinsics.fx_px
     row_count = row_end - row_start
 
-    left_columns = (
-        (reference_x_m >= -config.analysis_half_width_m)
-        & (reference_x_m < -config.center_half_width_m)
+    left_columns = (reference_x_m >= -config.analysis_half_width_m) & (
+        reference_x_m < -config.center_half_width_m
     )
     center_columns = np.abs(reference_x_m) <= config.center_half_width_m
-    right_columns = (
-        (reference_x_m > config.center_half_width_m)
-        & (reference_x_m <= config.analysis_half_width_m)
+    right_columns = (reference_x_m > config.center_half_width_m) & (
+        reference_x_m <= config.analysis_half_width_m
     )
 
     return (
@@ -219,10 +211,7 @@ def _assess_corridor(
     valid_count = int(valid_values.size)
     valid_fraction = valid_count / pixel_count
 
-    if (
-        valid_count < config.minimum_valid_samples
-        or valid_fraction < config.minimum_valid_fraction
-    ):
+    if valid_count < config.minimum_valid_samples or valid_fraction < config.minimum_valid_fraction:
         return CorridorAssessment(
             direction=direction,
             status=CorridorStatus.UNKNOWN,

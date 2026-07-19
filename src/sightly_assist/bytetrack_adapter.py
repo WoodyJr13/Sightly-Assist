@@ -64,12 +64,7 @@ class ByteTrackAdapter:
             raise RuntimeError("ByteTrack did not preserve confidence or class metadata")
         confidence_array = np.asarray(confidences, dtype=np.float64)
         class_id_array = np.asarray(class_ids, dtype=np.int64)
-        if not (
-            len(xyxy)
-            == len(tracker_ids)
-            == len(confidence_array)
-            == len(class_id_array)
-        ):
+        if not (len(xyxy) == len(tracker_ids) == len(confidence_array) == len(class_id_array)):
             raise RuntimeError("ByteTrack returned inconsistent detection arrays")
 
         for track_id in tuple(self._age_by_id):

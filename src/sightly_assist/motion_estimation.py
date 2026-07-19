@@ -127,9 +127,7 @@ class TrackMotionEstimator:
             if age_s < 0:
                 raise ValueError("Replay timestamps must be nondecreasing")
             status = (
-                MotionStatus.STALE
-                if age_s >= self.config.stale_after_s
-                else MotionStatus.NO_DEPTH
+                MotionStatus.STALE if age_s >= self.config.stale_after_s else MotionStatus.NO_DEPTH
             )
             if status is MotionStatus.STALE:
                 history.clear()
@@ -220,10 +218,7 @@ class TrackMotionEstimator:
         samples: tuple[_PositionSample, ...],
     ) -> tuple[np.ndarray, float, int]:
         times = np.asarray(
-            [
-                (sample.timestamp_ns - samples[0].timestamp_ns) / 1_000_000_000
-                for sample in samples
-            ],
+            [(sample.timestamp_ns - samples[0].timestamp_ns) / 1_000_000_000 for sample in samples],
             dtype=np.float64,
         )
         positions = np.asarray(
