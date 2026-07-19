@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterator
+from contextlib import suppress
 from datetime import timedelta
 from importlib.metadata import PackageNotFoundError, version
 from typing import Any
@@ -220,10 +221,8 @@ class OakDSource:
             try:
                 pipeline.stop()
             finally:
-                try:
+                with suppress(RuntimeError):
                     pipeline.wait()
-                except RuntimeError:
-                    pass
         self._pipeline = None
 
     def _imu_samples_through(self, timestamp_ns: int) -> tuple[ImuSample, ...]:
@@ -321,7 +320,8 @@ def _message_timestamp_ns(message: Any) -> int:
         method = getattr(message, method_name, None)
         if method is not None:
             timestamp = method()
-            return max(0, round(timestamp.total_seconds() * 1_000_000_000))
+            nanoseconds = int(round(float(timestamp.total_seconds()) * 1_000_000_000))
+            return max(0, nanoseconds)
     raise RuntimeError("DepthAI image message does not expose a timestamp")
 
 
@@ -330,7 +330,8 @@ def _report_timestamp_ns(report: Any) -> int | None:
         method = getattr(report, method_name, None)
         if method is not None:
             timestamp = method()
-            return max(0, round(timestamp.total_seconds() * 1_000_000_000))
+            nanoseconds = int(round(float(timestamp.total_seconds()) * 1_000_000_000))
+            return max(0, nanoseconds)
     return None
 
 
