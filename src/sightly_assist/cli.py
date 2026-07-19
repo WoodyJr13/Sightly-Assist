@@ -5,7 +5,7 @@ from __future__ import annotations
 import platform
 import sys
 from pathlib import Path
-from typing import cast
+from typing import Annotated, cast
 
 import typer
 
@@ -25,8 +25,14 @@ def doctor() -> None:
 
 @app.command()
 def simulate(
-    scenario_path: Path = typer.Argument(..., exists=True, dir_okay=False, readable=True),
-    output_directory: Path = typer.Option(Path("reports/runs/latest"), "--output", "-o"),
+    scenario_path: Annotated[
+        Path,
+        typer.Argument(exists=True, dir_okay=False, readable=True),
+    ],
+    output_directory: Annotated[
+        Path,
+        typer.Option("--output", "-o"),
+    ] = Path("reports/runs/latest"),
 ) -> None:
     """Run one deterministic YAML scenario and export its results."""
 
