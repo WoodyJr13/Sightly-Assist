@@ -1,4 +1,4 @@
-"""Adapter from Sightly Assist detections to Roboflow's ByteTrack implementation."""
+"""Adapter from Sightly Assist detections to a pinned real ByteTrack backend."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ from collections.abc import Sequence
 from typing import Any
 
 import numpy as np
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field
 
 from sightly_assist.perception import BoundingBox, Detection, FramePacket, TrackObservation
 
@@ -16,41 +16,28 @@ class TrackingDependencyError(RuntimeError):
 
 
 class ByteTrackConfig(BaseModel):
-    """Pinned ByteTrack parameters used by the research benchmark."""
+    """Pinned Supervision ByteTrack parameters used by the benchmark."""
 
     lost_track_buffer: int = Field(ge=0, default=30)
     track_activation_threshold: float = Field(ge=0, le=1, default=0.25)
+    minimum_matching_threshold: float = Field(ge=0, le=1, default=0.80)
+    frame_rate: float = Field(gt=0, default=10.0)
     minimum_consecutive_frames: int = Field(ge=1, default=1)
-    minimum_iou_threshold: float = Field(ge=0, le=1, default=0.20)
-    high_conf_det_threshold: float = Field(ge=0, le=1, default=0.60)
-
-    @model_validator(mode="after")
-    def validate_thresholds(self) -> ByteTrackConfig:
-        if self.high_conf_det_threshold < self.track_activation_threshold:
-            raise ValueError(
-                "high_conf_det_threshold must be at least track_activation_threshold"
-            )
-        return self
 
 
 class ByteTrackAdapter:
-    """Expose ``ByteTrackTracker`` through the project's tracker protocol.
-
-    The adapter passes absolute replay timestamps when supported, preserves
-    detector class metadata, filters immature ``-1`` IDs, and tracks local age
-    and missed-frame counters for compatibility with ``TrackObservation``.
-    """
+    """Expose Supervision's real ByteTrack through the project tracker protocol."""
 
     def __init__(self, config: ByteTrackConfig | None = None) -> None:
         self.config = config or ByteTrackConfig()
-        supervision, tracker_class = _import_tracking_dependencies()
+        supervision = _import_tracking_dependency()
         self._supervision = supervision
-        self._tracker: Any = tracker_class(
+        self._tracker: Any = supervision.ByteTrack(
             lost_track_buffer=self.config.lost_track_buffer,
             track_activation_threshold=self.config.track_activation_threshold,
+            minimum_matching_threshold=self.config.minimum_matching_threshold,
+            frame_rate=self.config.frame_rate,
             minimum_consecutive_frames=self.config.minimum_consecutive_frames,
-            minimum_iou_threshold=self.config.minimum_iou_threshold,
-            high_conf_det_threshold=self.config.high_conf_det_threshold,
         )
         self._age_by_id: dict[int, int] = {}
         self._missed_by_id: dict[int, int] = {}
@@ -67,8 +54,7 @@ class ByteTrackAdapter:
         self._validate_chronology(frame)
         class_names = _class_name_map(detections)
         native = self._to_native_detections(detections)
-        timestamp_s = frame.timestamp_ns / 1_000_000_000
-        tracked = self._update_native(native, timestamp_s)
+        tracked = self._tracker.update_with_detections(native)
 
         xyxy = np.asarray(tracked.xyxy, dtype=np.float64)
         tracker_ids = np.asarray(tracked.tracker_id, dtype=np.int64)
@@ -173,14 +159,6 @@ class ByteTrackAdapter:
             class_id=class_id,
         )
 
-    def _update_native(self, detections: Any, timestamp_s: float) -> Any:
-        try:
-            return self._tracker.update(detections, timestamp=timestamp_s)
-        except TypeError as exc:
-            if "timestamp" not in str(exc):
-                raise
-            return self._tracker.update(detections)
-
     def _validate_chronology(self, frame: FramePacket) -> None:
         if self._last_frame_id is not None and frame.frame_id <= self._last_frame_id:
             raise ValueError("ByteTrack frames must have strictly increasing frame IDs")
@@ -190,15 +168,14 @@ class ByteTrackAdapter:
         self._last_timestamp_ns = frame.timestamp_ns
 
 
-def _import_tracking_dependencies() -> tuple[Any, Any]:
+def _import_tracking_dependency() -> Any:
     try:
         import supervision
-        from trackers import ByteTrackTracker
     except ImportError as exc:
         raise TrackingDependencyError(
             'ByteTrack is not installed. Install Sightly Assist with the "tracking" extra.'
         ) from exc
-    return supervision, ByteTrackTracker
+    return supervision
 
 
 def _class_name_map(detections: Sequence[Detection]) -> dict[int, str]:
