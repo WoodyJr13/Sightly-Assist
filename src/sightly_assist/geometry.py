@@ -24,7 +24,10 @@ def relative_state(
 ) -> tuple[Vector2, Vector2]:
     """Return obstacle position and velocity relative to the observer."""
 
-    relative_position = position_at(obstacle, timestamp_s) - position_at(observer, timestamp_s)
+    relative_position = position_at(obstacle, timestamp_s) - position_at(
+        observer,
+        timestamp_s,
+    )
     relative_velocity = obstacle.velocity_mps - observer.velocity_mps
     return relative_position, relative_velocity
 
@@ -68,7 +71,11 @@ def closing_speed(relative_position: Vector2, relative_velocity: Vector2) -> flo
     return -relative_position.dot(relative_velocity) / distance
 
 
-def collision_boundary(observer: MovingBody, obstacle: MovingBody, safety_margin_m: float) -> float:
+def collision_boundary(
+    observer: MovingBody,
+    obstacle: MovingBody,
+    safety_margin_m: float,
+) -> float:
     """Return the combined circular collision boundary."""
 
     if safety_margin_m < 0 or not isfinite(safety_margin_m):
