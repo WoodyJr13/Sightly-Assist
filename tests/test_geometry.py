@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-import pytest
 from hypothesis import given, strategies as st
+import pytest
 
 from sightly_assist.geometry import (
     closing_speed,
