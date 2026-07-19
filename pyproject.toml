@@ -20,6 +20,8 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
   "depthai==3.7.1",
+  "fastapi>=0.115,<1",
+  "httpx>=0.27,<1",
   "hypothesis>=6.100,<7",
   "matplotlib>=3.8,<4",
   "mypy>=1.10,<2",
@@ -31,6 +33,7 @@ dev = [
   "ruff==0.5.7",
   "supervision==0.27.0",
   "types-PyYAML>=6.0.12,<7",
+  "uvicorn[standard]>=0.30,<1",
 ]
 visualization = ["matplotlib>=3.8,<4"]
 vision = ["opencv-python-headless>=4.13,<5"]
@@ -43,9 +46,14 @@ oak = [
   "depthai==3.7.1",
   "opencv-python-headless>=4.13,<5",
 ]
+mobile = [
+  "fastapi>=0.115,<1",
+  "uvicorn[standard]>=0.30,<1",
+]
 
 [project.scripts]
 sightly = "sightly_assist.cli:app"
+sightly-mobile = "sightly_assist.mobile_cli:app"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/sightly_assist"]
