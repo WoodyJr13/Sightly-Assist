@@ -14,6 +14,7 @@ from sightly_assist.depth_association import (
     DepthAssociationConfig,
     associate_tracks_depth,
 )
+from sightly_assist.opencv_io import load_rgb
 from sightly_assist.perception import (
     Detection,
     FramePacket,
@@ -47,12 +48,11 @@ def process_replay(
     camera_intrinsics: CameraIntrinsics | None = None,
     depth_config: DepthAssociationConfig | None = None,
 ) -> Iterator[ReplayResult]:
-    """Process a validated replay sequence in chronological order.
+    """Decode, detect, track, and depth-associate a replay sequence.
 
-    RGB decoding remains optional so hardware-independent tests and simulations
-    do not require OpenCV. Depth association is enabled only when both a depth
-    loader and matching camera intrinsics are supplied. Frames without depth
-    still produce explicit ``NO_DEPTH`` associations for every active track.
+    OpenCV is used by default to decode RGB frames. Tests and alternate sensor
+    backends can provide another loader. Depth association is enabled only when
+    both a depth loader and matching camera intrinsics are supplied.
     """
 
     if (depth_loader is None) != (camera_intrinsics is None):
@@ -60,10 +60,11 @@ def process_replay(
             "depth_loader and camera_intrinsics must either both be provided or both be omitted"
         )
 
+    resolved_image_loader = image_loader or load_rgb
     for frame in iter_frames(manifest):
-        if image_loader is not None:
-            image_loader(frame, root)
-        detections = tuple(detector.predict(frame))
+        image_bgr = resolved_image_loader(frame, root)
+        _validate_image(frame, image_bgr)
+        detections = tuple(detector.predict(frame, image_bgr))
         _validate_detection_frames(frame, detections)
         tracks = tuple(tracker.update(frame, detections))
 
@@ -84,6 +85,15 @@ def process_replay(
             tracks=tracks,
             depth_associations=depth_associations,
         )
+
+
+def _validate_image(frame: FramePacket, image_bgr: np.ndarray) -> None:
+    if image_bgr.ndim != 3 or image_bgr.shape[2] != 3:
+        raise ValueError("RGB loader must return a three-channel image")
+    if image_bgr.shape[:2] != (frame.height_px, frame.width_px):
+        raise ValueError("Decoded RGB dimensions must match the replay frame")
+    if not np.issubdtype(image_bgr.dtype, np.number):
+        raise ValueError("Decoded RGB image must use a numeric data type")
 
 
 def _validate_detection_frames(
