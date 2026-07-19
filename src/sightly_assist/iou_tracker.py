@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from dataclasses import dataclass
 
-from sightly_assist.perception import Detection, FramePacket, TrackObservation
+from sightly_assist.perception import BoundingBox, Detection, FramePacket, TrackObservation
 
 
 @dataclass
@@ -13,7 +13,7 @@ class _TrackState:
     track_id: int
     class_name: str
     confidence: float
-    bbox: object
+    bbox: BoundingBox
     age_frames: int
     missed_frames: int
 
@@ -52,7 +52,7 @@ class IoUTracker:
             for detection_index, detection in enumerate(detections):
                 if detection.class_name != track.class_name:
                     continue
-                iou = track.bbox.intersection_over_union(detection.bbox)  # type: ignore[attr-defined]
+                iou = track.bbox.intersection_over_union(detection.bbox)
                 if iou >= self.minimum_iou:
                     candidates.append((iou, track_id, detection_index))
 
@@ -109,7 +109,7 @@ class IoUTracker:
             frame_id=frame.frame_id,
             class_name=track.class_name,
             confidence=track.confidence,
-            bbox=track.bbox,  # type: ignore[arg-type]
+            bbox=track.bbox,
             age_frames=track.age_frames,
             missed_frames=track.missed_frames,
         )
