@@ -35,7 +35,9 @@ class ImuSample(BaseModel):
         for vector in values:
             if vector is not None and not all(isfinite(component) for component in vector):
                 raise ValueError("IMU measurements must contain finite values")
-        if self.orientation_accuracy_rad is not None and not isfinite(self.orientation_accuracy_rad):
+        if self.orientation_accuracy_rad is not None and not isfinite(
+            self.orientation_accuracy_rad
+        ):
             raise ValueError("orientation accuracy must be finite")
         return self
 

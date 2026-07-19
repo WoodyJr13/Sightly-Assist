@@ -87,7 +87,10 @@ def record_rgbd_dataset(
                 validate_capture_frame(capture, source.intrinsics)
                 if previous_frame_id is not None and capture.frame_id <= previous_frame_id:
                     raise ValueError("capture frame IDs must be strictly increasing")
-                if previous_timestamp_ns is not None and capture.timestamp_ns <= previous_timestamp_ns:
+                if (
+                    previous_timestamp_ns is not None
+                    and capture.timestamp_ns <= previous_timestamp_ns
+                ):
                     raise ValueError("capture timestamps must be strictly increasing")
                 if first_timestamp_ns is None:
                     first_timestamp_ns = capture.timestamp_ns
@@ -100,7 +103,9 @@ def record_rgbd_dataset(
                 rgb_path = staging / rgb_relative
                 depth_path = staging / depth_relative
                 _write_rgb_png(rgb_path, capture.rgb_bgr, config.png_compression)
-                np.save(depth_path, np.asarray(capture.depth_m, dtype=np.float32), allow_pickle=False)
+                np.save(
+                    depth_path, np.asarray(capture.depth_m, dtype=np.float32), allow_pickle=False
+                )
 
                 for imu_sample in capture.imu_samples:
                     imu_file.write(imu_sample.model_dump_json() + "\n")
