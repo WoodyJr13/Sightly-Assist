@@ -128,12 +128,8 @@ def export_run(
                         "relative_z_m": item.relative_position_m.z,
                         "relative_vx_mps": item.relative_velocity_mps.x,
                         "relative_vz_mps": item.relative_velocity_mps.z,
-                        "time_to_closest_approach_s": (
-                            item.time_to_closest_approach_s
-                        ),
-                        "distance_at_closest_approach_m": (
-                            item.distance_at_closest_approach_m
-                        ),
+                        "time_to_closest_approach_s": (item.time_to_closest_approach_s),
+                        "distance_at_closest_approach_m": (item.distance_at_closest_approach_m),
                         "closing_speed_mps": item.closing_speed_mps,
                         "predicted_collision": item.predicted_collision,
                         "risk_score": item.risk_score,
