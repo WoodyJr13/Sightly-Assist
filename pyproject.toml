@@ -1,0 +1,55 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "sightly-assist"
+version = "0.1.0"
+description = "Offline, uncertainty-aware pedestrian hazard forecasting research platform"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "Proprietary research prototype" }
+authors = [{ name = "Ved" }]
+dependencies = [
+  "numpy>=1.26,<3",
+  "pydantic>=2.7,<3",
+  "PyYAML>=6.0,<7",
+  "typer>=0.12,<1",
+]
+
+[project.optional-dependencies]
+dev = [
+  "mypy>=1.10,<2",
+  "pytest>=8.2,<9",
+  "pytest-cov>=5,<7",
+  "hypothesis>=6.100,<7",
+  "ruff>=0.5,<1",
+]
+visualization = ["matplotlib>=3.8,<4"]
+
+[project.scripts]
+sightly = "sightly_assist.cli:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/sightly_assist"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+packages = ["sightly_assist"]
+
+[tool.coverage.run]
+source = ["sightly_assist"]
+branch = true
