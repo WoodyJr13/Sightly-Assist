@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Protocol, runtime_checkable
 
+import numpy as np
 from pydantic import BaseModel, Field, model_validator
 
 
@@ -98,10 +99,10 @@ class TrackObservation(BaseModel):
 
 @runtime_checkable
 class ObjectDetector(Protocol):
-    """Interface implemented by mock, OpenCV, ONNX, and TensorRT detectors."""
+    """Interface implemented by mock, ONNX, and TensorRT detectors."""
 
-    def predict(self, frame: FramePacket) -> Sequence[Detection]:
-        """Return detections for one frame."""
+    def predict(self, frame: FramePacket, image_bgr: np.ndarray) -> Sequence[Detection]:
+        """Return detections for one decoded BGR image."""
 
 
 @runtime_checkable
@@ -119,8 +120,8 @@ class MultiObjectTracker(Protocol):
 class EmptyDetector:
     """Deterministic detector used for pipeline and replay tests."""
 
-    def predict(self, frame: FramePacket) -> Sequence[Detection]:
+    def predict(self, frame: FramePacket, image_bgr: np.ndarray) -> Sequence[Detection]:
         """Return no detections."""
 
-        del frame
+        del frame, image_bgr
         return ()
