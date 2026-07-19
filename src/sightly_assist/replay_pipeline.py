@@ -1,4 +1,4 @@
-"""Hardware-independent replay perception, depth, and motion processing loop."""
+"""Hardware-independent replay perception, depth, motion, and risk processing loop."""
 
 from __future__ import annotations
 
@@ -23,6 +23,11 @@ from sightly_assist.perception import (
     ObjectDetector,
     TrackObservation,
 )
+from sightly_assist.perception_risk import (
+    PerceptionRiskConfig,
+    PerceptionRiskResult,
+    assess_perception_risks,
+)
 from sightly_assist.replay import ReplayManifest, iter_frames
 
 ImageLoader = Callable[[FramePacket, Path], np.ndarray]
@@ -31,13 +36,14 @@ DepthLoader = Callable[[FramePacket, Path], np.ndarray | None]
 
 @dataclass(frozen=True)
 class ReplayResult:
-    """Perception, depth, and motion outputs for one replay frame."""
+    """Perception, depth, motion, and risk outputs for one replay frame."""
 
     frame: FramePacket
     detections: tuple[Detection, ...]
     tracks: tuple[TrackObservation, ...]
     depth_associations: tuple[DepthAssociation, ...] = ()
     motion_estimates: tuple[MotionEstimate, ...] = ()
+    risk_results: tuple[PerceptionRiskResult, ...] = ()
 
 
 def process_replay(
@@ -50,13 +56,15 @@ def process_replay(
     camera_intrinsics: CameraIntrinsics | None = None,
     depth_config: DepthAssociationConfig | None = None,
     motion_estimator: TrackMotionEstimator | None = None,
+    risk_config: PerceptionRiskConfig | None = None,
 ) -> Iterator[ReplayResult]:
-    """Decode, detect, track, depth-associate, and estimate replay motion.
+    """Decode, detect, track, depth-associate, estimate motion, and assess risk.
 
     OpenCV is used by default to decode RGB frames. Tests and alternate sensor
     backends can provide another loader. Depth association is enabled only when
     both a depth loader and matching camera intrinsics are supplied. Temporal
-    motion estimation requires those depth-associated camera positions.
+    motion estimation requires those depth-associated camera positions. Risk
+    assessment requires temporally valid motion estimates.
     """
 
     if (depth_loader is None) != (camera_intrinsics is None):
@@ -65,6 +73,8 @@ def process_replay(
         )
     if motion_estimator is not None and (depth_loader is None or camera_intrinsics is None):
         raise ValueError("motion_estimator requires depth_loader and camera_intrinsics")
+    if risk_config is not None and motion_estimator is None:
+        raise ValueError("risk_config requires motion_estimator")
 
     resolved_image_loader = image_loader or load_rgb
     for frame in iter_frames(manifest):
@@ -89,12 +99,22 @@ def process_replay(
         if motion_estimator is not None:
             motion_estimates = motion_estimator.update(frame, depth_associations)
 
+        risk_results: tuple[PerceptionRiskResult, ...] = ()
+        if risk_config is not None:
+            risk_results = assess_perception_risks(
+                tracks,
+                motion_estimates,
+                frame.timestamp_ns / 1_000_000_000,
+                risk_config,
+            )
+
         yield ReplayResult(
             frame=frame,
             detections=detections,
             tracks=tracks,
             depth_associations=depth_associations,
             motion_estimates=motion_estimates,
+            risk_results=risk_results,
         )
 
 
