@@ -11,8 +11,8 @@ permissions:
 jobs:
   format-branch:
     if: >-
-      github.event_name == 'push' &&
-      github.ref_name == 'agent/milestone-14-ground-truth-scoring'
+      github.event_name == 'pull_request' &&
+      github.head_ref == 'agent/milestone-14-ground-truth-scoring'
     runs-on: ubuntu-latest
     permissions:
       contents: write
