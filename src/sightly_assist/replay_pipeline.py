@@ -1,4 +1,4 @@
-"""Hardware-independent replay perception and depth processing loop."""
+"""Hardware-independent replay perception, depth, and motion processing loop."""
 
 from __future__ import annotations
 
@@ -14,6 +14,7 @@ from sightly_assist.depth_association import (
     DepthAssociationConfig,
     associate_tracks_depth,
 )
+from sightly_assist.motion_estimation import MotionEstimate, TrackMotionEstimator
 from sightly_assist.opencv_io import load_rgb
 from sightly_assist.perception import (
     Detection,
@@ -30,12 +31,13 @@ DepthLoader = Callable[[FramePacket, Path], np.ndarray | None]
 
 @dataclass(frozen=True)
 class ReplayResult:
-    """Perception and depth outputs for one replay frame."""
+    """Perception, depth, and motion outputs for one replay frame."""
 
     frame: FramePacket
     detections: tuple[Detection, ...]
     tracks: tuple[TrackObservation, ...]
     depth_associations: tuple[DepthAssociation, ...] = ()
+    motion_estimates: tuple[MotionEstimate, ...] = ()
 
 
 def process_replay(
@@ -47,18 +49,22 @@ def process_replay(
     depth_loader: DepthLoader | None = None,
     camera_intrinsics: CameraIntrinsics | None = None,
     depth_config: DepthAssociationConfig | None = None,
+    motion_estimator: TrackMotionEstimator | None = None,
 ) -> Iterator[ReplayResult]:
-    """Decode, detect, track, and depth-associate a replay sequence.
+    """Decode, detect, track, depth-associate, and estimate replay motion.
 
     OpenCV is used by default to decode RGB frames. Tests and alternate sensor
     backends can provide another loader. Depth association is enabled only when
-    both a depth loader and matching camera intrinsics are supplied.
+    both a depth loader and matching camera intrinsics are supplied. Temporal
+    motion estimation requires those depth-associated camera positions.
     """
 
     if (depth_loader is None) != (camera_intrinsics is None):
         raise ValueError(
             "depth_loader and camera_intrinsics must either both be provided or both be omitted"
         )
+    if motion_estimator is not None and (depth_loader is None or camera_intrinsics is None):
+        raise ValueError("motion_estimator requires depth_loader and camera_intrinsics")
 
     resolved_image_loader = image_loader or load_rgb
     for frame in iter_frames(manifest):
@@ -79,11 +85,16 @@ def process_replay(
                 depth_config,
             )
 
+        motion_estimates: tuple[MotionEstimate, ...] = ()
+        if motion_estimator is not None:
+            motion_estimates = motion_estimator.update(frame, depth_associations)
+
         yield ReplayResult(
             frame=frame,
             detections=detections,
             tracks=tracks,
             depth_associations=depth_associations,
+            motion_estimates=motion_estimates,
         )
 
 
