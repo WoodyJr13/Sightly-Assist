@@ -11,12 +11,15 @@ from sightly_assist.tracking_benchmark import TrackingBenchmarkResult, benchmark
 from sightly_assist.tracking_scenarios import locked_tracking_sequences
 
 
+BYTETRACK_REPORT_NAME = "bytetrack-supervision-0.27.0"
+
+
 def run_locked_tracking_benchmark() -> tuple[TrackingBenchmarkResult, ...]:
     """Benchmark the transparent baseline and real ByteTrack on identical data."""
 
     return benchmark_trackers(
         {
-            "bytetrack-2.5.0": ByteTrackAdapter,
+            BYTETRACK_REPORT_NAME: ByteTrackAdapter,
             "iou-baseline": IoUTracker,
         },
         locked_tracking_sequences(),
