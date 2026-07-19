@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import numpy as np
 import pytest
 from pydantic import ValidationError
 
@@ -26,9 +27,10 @@ def test_empty_detector_satisfies_protocol() -> None:
         height_px=480,
         rgb_path="rgb/000000.jpg",
     )
+    image = np.zeros((480, 640, 3), dtype=np.uint8)
 
     assert isinstance(detector, ObjectDetector)
-    assert detector.predict(frame) == ()
+    assert detector.predict(frame, image) == ()
 
 
 def test_manifest_round_trip_and_file_validation(tmp_path: Path) -> None:
