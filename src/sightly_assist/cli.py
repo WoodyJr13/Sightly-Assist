@@ -5,6 +5,7 @@ from __future__ import annotations
 import platform
 import sys
 from pathlib import Path
+from typing import cast
 
 import typer
 
@@ -33,14 +34,16 @@ def simulate(
     steps = run_scenario(scenario)
     summary_path, timeline_path = export_run(scenario, steps, output_directory)
     summary = summarize_run(scenario, steps)
+    expectation_met = bool(summary["expectation_met"])
+    peak_risk_score = cast(float, summary["peak_risk_score"])
 
     typer.echo(f"Scenario: {scenario.scenario_id}")
-    typer.echo(f"Expectation met: {summary['expectation_met']}")
-    typer.echo(f"Peak risk: {summary['peak_risk_score']:.3f}")
+    typer.echo(f"Expectation met: {expectation_met}")
+    typer.echo(f"Peak risk: {peak_risk_score:.3f}")
     typer.echo(f"Summary: {summary_path}")
     typer.echo(f"Timeline: {timeline_path}")
 
-    if not bool(summary["expectation_met"]):
+    if not expectation_met:
         raise typer.Exit(code=2)
 
 
