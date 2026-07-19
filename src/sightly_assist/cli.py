@@ -10,6 +10,7 @@ from typing import Annotated, cast
 import typer
 
 from sightly_assist.simulation import export_run, load_scenario, run_scenario, summarize_run
+from sightly_assist.tracking_report import export_locked_tracking_benchmark
 from sightly_assist.visualization import plot_top_down
 
 app = typer.Typer(no_args_is_help=True, help="Sightly Assist research tools.")
@@ -62,6 +63,27 @@ def simulate(
 
     if not expectation_met:
         raise typer.Exit(code=2)
+
+
+@app.command("benchmark-tracking")
+def benchmark_tracking(
+    output_path: Annotated[
+        Path,
+        typer.Option("--output", "-o", help="JSON benchmark report path."),
+    ] = Path("reports/benchmarks/tracking.json"),
+) -> None:
+    """Compare the IoU baseline and ByteTrack on locked synthetic sequences."""
+
+    results = export_locked_tracking_benchmark(output_path)
+    typer.echo(f"Report: {output_path}")
+    for result in results:
+        metrics = result.metrics
+        typer.echo(
+            f"{result.tracker_name}: recall={metrics.recall:.3f} "
+            f"IDSW={metrics.identity_switches} fragments={metrics.fragmentations} "
+            f"risk_F1={metrics.collision_f1:.3f} "
+            f"p95={metrics.latency_p95_ms:.3f} ms"
+        )
 
 
 if __name__ == "__main__":
