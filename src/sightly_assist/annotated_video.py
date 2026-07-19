@@ -11,6 +11,7 @@ import numpy as np
 from pydantic import BaseModel, Field
 
 from sightly_assist.opencv_io import VisionDependencyError, load_rgb
+from sightly_assist.perception import FramePacket
 from sightly_assist.replay import ReplayManifest, iter_frames
 from sightly_assist.replay_pipeline import ReplayResult
 from sightly_assist.warning_policy import AlertAction
@@ -53,7 +54,7 @@ class VideoWriter(Protocol):
         """Close the writer and flush pending frames."""
 
 
-ImageLoader = Callable[[object, Path], np.ndarray]
+ImageLoader = Callable[[FramePacket, Path], np.ndarray]
 WriterFactory = Callable[[Path, float, tuple[int, int]], tuple[VideoWriter, str]]
 
 
@@ -149,7 +150,7 @@ def export_annotated_video(
     root: Path,
     output_path: Path,
     *,
-    image_loader: Callable[[Any, Path], np.ndarray] = load_rgb,
+    image_loader: ImageLoader = load_rgb,
     writer_factory: WriterFactory | None = None,
     config: AnnotationConfig | None = None,
 ) -> VideoExportSummary:
@@ -172,18 +173,20 @@ def export_annotated_video(
     frame_count = 0
     try:
         sentinel = object()
-        for frame, result in zip_longest(frames, results, fillvalue=sentinel):
-            if frame is sentinel or result is sentinel:
+        for frame_value, result_value in zip_longest(frames, results, fillvalue=sentinel):
+            if frame_value is sentinel or result_value is sentinel:
                 raise ValueError("Replay results count must match the manifest frame count")
-            if not isinstance(result, ReplayResult):
+            if not isinstance(frame_value, FramePacket):
+                raise TypeError("Replay manifest must contain FramePacket values")
+            if not isinstance(result_value, ReplayResult):
                 raise TypeError("Replay results must contain ReplayResult values")
-            if result.frame.frame_id != frame.frame_id:
+            if result_value.frame.frame_id != frame_value.frame_id:
                 raise ValueError(
                     "Replay result frame order does not match manifest: "
-                    f"expected {frame.frame_id}, got {result.frame.frame_id}"
+                    f"expected {frame_value.frame_id}, got {result_value.frame.frame_id}"
                 )
-            image = image_loader(frame, root)
-            annotated = annotate_frame(image, result, settings)
+            image = image_loader(frame_value, root)
+            annotated = annotate_frame(image, result_value, settings)
             writer.write(annotated)
             frame_count += 1
     finally:
