@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import csv
 import json
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable
 
 import yaml
 
@@ -51,7 +51,10 @@ def run_scenario(scenario: ScenarioConfig) -> list[SimulationStep]:
     return steps
 
 
-def summarize_run(scenario: ScenarioConfig, steps: Iterable[SimulationStep]) -> dict[str, object]:
+def summarize_run(
+    scenario: ScenarioConfig,
+    steps: Iterable[SimulationStep],
+) -> dict[str, object]:
     """Create a compact machine-readable run summary."""
 
     materialized = list(steps)
@@ -62,7 +65,9 @@ def summarize_run(scenario: ScenarioConfig, steps: Iterable[SimulationStep]) -> 
     )
     expectation_met = scenario.expected.hazard == bool(predicted_hazards)
     if scenario.expected.primary_obstacle_id is not None and predicted_hazards:
-        expectation_met = expectation_met and peak.obstacle_id == scenario.expected.primary_obstacle_id
+        expectation_met = (
+            expectation_met and peak.obstacle_id == scenario.expected.primary_obstacle_id
+        )
 
     return {
         "scenario_id": scenario.scenario_id,
@@ -123,8 +128,12 @@ def export_run(
                         "relative_z_m": item.relative_position_m.z,
                         "relative_vx_mps": item.relative_velocity_mps.x,
                         "relative_vz_mps": item.relative_velocity_mps.z,
-                        "time_to_closest_approach_s": item.time_to_closest_approach_s,
-                        "distance_at_closest_approach_m": item.distance_at_closest_approach_m,
+                        "time_to_closest_approach_s": (
+                            item.time_to_closest_approach_s
+                        ),
+                        "distance_at_closest_approach_m": (
+                            item.distance_at_closest_approach_m
+                        ),
                         "closing_speed_mps": item.closing_speed_mps,
                         "predicted_collision": item.predicted_collision,
                         "risk_score": item.risk_score,
