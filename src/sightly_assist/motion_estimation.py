@@ -126,7 +126,11 @@ class TrackMotionEstimator:
             age_s = (frame.timestamp_ns - history[-1].timestamp_ns) / 1_000_000_000
             if age_s < 0:
                 raise ValueError("Replay timestamps must be nondecreasing")
-            status = MotionStatus.STALE if age_s >= self.config.stale_after_s else MotionStatus.NO_DEPTH
+            status = (
+                MotionStatus.STALE
+                if age_s >= self.config.stale_after_s
+                else MotionStatus.NO_DEPTH
+            )
             if status is MotionStatus.STALE:
                 history.clear()
                 self._smoothed_velocity.pop(association.track_id, None)
@@ -216,7 +220,10 @@ class TrackMotionEstimator:
         samples: tuple[_PositionSample, ...],
     ) -> tuple[np.ndarray, float, int]:
         times = np.asarray(
-            [(sample.timestamp_ns - samples[0].timestamp_ns) / 1_000_000_000 for sample in samples],
+            [
+                (sample.timestamp_ns - samples[0].timestamp_ns) / 1_000_000_000
+                for sample in samples
+            ],
             dtype=np.float64,
         )
         positions = np.asarray(
@@ -230,7 +237,7 @@ class TrackMotionEstimator:
                 delta_t = times[right] - times[left]
                 if delta_t > 0:
                     slopes.append((positions[right] - positions[left]) / delta_t)
-        velocity = np.median(np.stack(slopes), axis=0)
+        velocity = np.asarray(np.median(np.stack(slopes), axis=0), dtype=np.float64)
         intercept = np.median(positions - times[:, np.newaxis] * velocity, axis=0)
         predictions = intercept + times[:, np.newaxis] * velocity
         residuals = np.linalg.norm(positions - predictions, axis=1)
@@ -262,7 +269,11 @@ class TrackMotionEstimator:
         if denominator <= 0:
             return np.zeros(3, dtype=np.float64)
         centered_positions = positions - np.mean(positions, axis=0)
-        return np.sum(centered_times[:, np.newaxis] * centered_positions, axis=0) / denominator
+        numerator = np.sum(
+            centered_times[:, np.newaxis] * centered_positions,
+            axis=0,
+        )
+        return np.asarray(numerator / denominator, dtype=np.float64)
 
     def _prune_history(self, history: deque[_PositionSample], timestamp_ns: int) -> None:
         maximum_age_ns = int(self.config.maximum_history_age_s * 1_000_000_000)
