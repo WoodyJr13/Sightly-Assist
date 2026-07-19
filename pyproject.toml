@@ -27,7 +27,7 @@ dev = [
   "opencv-python-headless>=4.13,<5",
   "pytest>=8.2,<9",
   "pytest-cov>=5,<7",
-  "ruff>=0.5,<1",
+  "ruff==0.5.7",
   "supervision==0.27.0",
   "types-PyYAML>=6.0.12,<7",
 ]
