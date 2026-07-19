@@ -19,13 +19,16 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
+  "hypothesis>=6.100,<7",
+  "matplotlib>=3.8,<4",
   "mypy>=1.10,<2",
+  "opencv-python-headless>=4.13,<5",
   "pytest>=8.2,<9",
   "pytest-cov>=5,<7",
-  "hypothesis>=6.100,<7",
   "ruff>=0.5,<1",
 ]
 visualization = ["matplotlib>=3.8,<4"]
+vision = ["opencv-python-headless>=4.13,<5"]
 
 [project.scripts]
 sightly = "sightly_assist.cli:app"
@@ -49,6 +52,10 @@ select = ["E", "F", "I", "B", "UP", "SIM"]
 python_version = "3.11"
 strict = true
 packages = ["sightly_assist"]
+
+[[tool.mypy.overrides]]
+module = "cv2"
+ignore_missing_imports = true
 
 [tool.coverage.run]
 source = ["sightly_assist"]
