@@ -5,7 +5,6 @@ from __future__ import annotations
 import hashlib
 import json
 import shutil
-from collections.abc import Callable
 from pathlib import Path
 
 import numpy as np
@@ -17,7 +16,7 @@ from sightly_assist.bytetrack_adapter import ByteTrackAdapter
 from sightly_assist.camera_motion import RotationCompensatedMotionEstimator
 from sightly_assist.dataset_recorder import verify_dataset_checksums
 from sightly_assist.depth_association import DepthStatus
-from sightly_assist.free_space import FreeSpaceConfig
+from sightly_assist.free_space import CorridorDirection, FreeSpaceConfig
 from sightly_assist.motion_estimation import MotionStatus
 from sightly_assist.onnx_detector import OnnxYoloDetector
 from sightly_assist.opencv_io import load_depth, load_rgb
@@ -78,10 +77,6 @@ class ReplayEvaluationSummary(BaseModel):
     summary_path: str
     annotated_video_path: str | None = None
     audio_directory: str | None = None
-
-
-DetectorFactory = Callable[[], ObjectDetector]
-TrackerFactory = Callable[[], MultiObjectTracker]
 
 
 def run_onnx_replay_evaluation(
@@ -189,7 +184,6 @@ def evaluate_replay(
     summary = _summarize(
         manifest,
         results,
-        destination,
         results_path,
         summary_path,
         video_path,
@@ -206,7 +200,6 @@ def evaluate_replay(
 def _summarize(
     manifest: ReplayManifest,
     results: tuple[ReplayResult, ...],
-    destination: Path,
     results_path: Path,
     summary_path: Path,
     video_path: Path | None,
@@ -228,9 +221,9 @@ def _summarize(
             action = result.warning_decision.action.value
             warning_counts[action] += 1
             emitted_warning_count += int(result.warning_decision.should_emit)
-        center = result.free_space_analysis
-        if center is not None:
-            state = center.center.state.value
+        free_space = result.free_space_analysis
+        if free_space is not None:
+            state = free_space.corridor(CorridorDirection.CENTER).status.value
             center_counts[state] = center_counts.get(state, 0) + 1
         if any(
             risk.status is PerceptionRiskStatus.VALID
@@ -258,17 +251,17 @@ def _summarize(
         detection_count=sum(len(result.detections) for result in results),
         track_observation_count=sum(len(result.tracks) for result in results),
         valid_depth_association_count=sum(
-            association.status is DepthStatus.VALID
+            int(association.status is DepthStatus.VALID)
             for result in results
             for association in result.depth_associations
         ),
         valid_motion_estimate_count=sum(
-            motion.status is MotionStatus.VALID
+            int(motion.status is MotionStatus.VALID)
             for result in results
             for motion in result.motion_estimates
         ),
         valid_risk_result_count=sum(
-            risk.status is PerceptionRiskStatus.VALID
+            int(risk.status is PerceptionRiskStatus.VALID)
             for result in results
             for risk in result.risk_results
         ),
@@ -276,7 +269,7 @@ def _summarize(
         emitted_warning_count=emitted_warning_count,
         warning_action_counts=warning_counts,
         center_free_space_counts=center_counts,
-        synchronized_frame_count=sum(frame.synchronized for frame in manifest.frames),
+        synchronized_frame_count=sum(int(frame.synchronized) for frame in manifest.frames),
         mean_processing_fps=mean_processing_fps,
         realtime_factor=realtime_factor,
         stage_latencies=_latency_summary(timings),
