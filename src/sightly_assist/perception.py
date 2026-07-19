@@ -64,7 +64,7 @@ class BoundingBox(BaseModel):
 
 
 class FramePacket(BaseModel):
-    """Metadata for one synchronized frame without embedding image bytes."""
+    """Metadata for one synchronized frame without embedding sensor bytes."""
 
     frame_id: int = Field(ge=0)
     timestamp_ns: int = Field(ge=0)
@@ -73,6 +73,7 @@ class FramePacket(BaseModel):
     rgb_path: str = Field(min_length=1)
     depth_path: str | None = None
     synchronized: bool = True
+    orientation_wxyz: tuple[float, float, float, float] | None = None
 
 
 class Detection(BaseModel):
