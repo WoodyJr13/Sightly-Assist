@@ -27,22 +27,52 @@ jobs:
       - name: Lint
         id: lint
         continue-on-error: true
-        run: ruff check src tests 2>&1 | tee ruff-output.txt
+        shell: bash
+        run: |
+          set -o pipefail
+          ruff check src tests 2>&1 | tee ruff-output.txt
 
       - name: Check formatting
         id: format
         continue-on-error: true
-        run: ruff format --check src tests 2>&1 | tee format-output.txt
+        shell: bash
+        run: |
+          set -o pipefail
+          ruff format --check src tests 2>&1 | tee format-output.txt
 
       - name: Type check
         id: mypy
         continue-on-error: true
-        run: mypy 2>&1 | tee mypy-output.txt
+        shell: bash
+        run: |
+          set -o pipefail
+          mypy 2>&1 | tee mypy-output.txt
 
       - name: Test
         id: pytest
         continue-on-error: true
-        run: pytest --cov --cov-report=term-missing 2>&1 | tee pytest-output.txt
+        shell: bash
+        run: |
+          set -o pipefail
+          pytest --cov --cov-report=term-missing 2>&1 | tee pytest-output.txt
+
+      - name: Run tracking benchmark
+        id: tracking_benchmark
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p reports/benchmarks
+          sightly benchmark-tracking --output reports/benchmarks/tracking.json \
+            2>&1 | tee tracking-benchmark-output.txt
+
+      - name: Upload tracking benchmark
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tracking-benchmark
+          path: reports/benchmarks/tracking.json
+          if-no-files-found: ignore
 
       - name: Upload diagnostics
         if: always()
@@ -54,11 +84,13 @@ jobs:
             format-output.txt
             mypy-output.txt
             pytest-output.txt
+            tracking-benchmark-output.txt
 
       - name: Enforce check results
         if: >-
           steps.lint.outcome == 'failure' ||
           steps.format.outcome == 'failure' ||
           steps.mypy.outcome == 'failure' ||
-          steps.pytest.outcome == 'failure'
+          steps.pytest.outcome == 'failure' ||
+          steps.tracking_benchmark.outcome == 'failure'
         run: exit 1
